@@ -108,16 +108,8 @@ tailwind.config = {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 
-  const SESSION_KEY = 'now_enjoy_session_user';
-  const session = () => {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
-    catch { return null; }
-  };
-
-  const requireUser = () => {
-    if (!session()) { location.replace('index.html'); return false; }
-    return true;
-  };
+  // Admin-only page: the role is checked against Supabase (profiles.is_admin).
+  const requireUser = () => NowEnjoyAuth.requireAdmin();
 
   const dbDelete = (store, key) => new Promise((resolve, reject) => {
     const tx = db.transaction(store, 'readwrite');
@@ -146,7 +138,8 @@ tailwind.config = {
   }
 
   async function init() {
-    if (!requireUser()) return;
+    const authUser = await requireUser();
+    if (!authUser) return;
     startParticles();
     await initDB();
     await loadDeleteList();
@@ -178,9 +171,10 @@ tailwind.config = {
     };
   }
 
-  ready(() => init().catch(err => {
+  ready(() => init().catch(async err => {
     console.error(err);
-    if (!session()) location.replace('index.html');
+    const s = await NowEnjoyAuth.getSession();
+    if (!s) location.replace('index.html');
     else alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
   }));
 
