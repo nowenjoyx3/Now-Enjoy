@@ -82,127 +82,38 @@ tailwind.config = {
     animate();
   }
 
-  const SESSION_KEY = 'now_enjoy_session_user';
-  const session = () => {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
-    catch { return null; }
-  };
-
   const setText = (id, value) => { if ($(id)) $(id).textContent = value; };
+  const auth = window.NowEnjoyAuth;
 
-  const requireUser = () => {
-    if (!session()) { location.replace('index.html'); return false; }
-    return true;
-  };
+  let currentUser = null;
+  let currentProfile = null;
 
+  function renderProfile() {
+    const p = currentProfile || {};
+    setText('profFullName', p.full_name || '---');
+    setText('profUsername', p.username ? '@' + p.username : '---');
+    setText('profGmail', (currentUser && currentUser.email) || '---');
+    setText('profAge', p.age ? p.age + ' years old' : '---');
+  }
 
-  const ADMIN_USERNAME = 'DracoAura099@Hacker';
-  const ADMIN_PASSWORD = 'HabibAura099@Hacker';
-  const PROFILE_KEY = 'nowEnjoyProfileOverrides';
-
-  function setupAdminLogin() {
-    const secretLine = $('adminSecretLine');
-    const loginModal = $('adminLoginModal');
-    const loginForm = $('adminLoginForm');
-    const usernameInput = $('adminUsername');
-    const passwordInput = $('adminPassword');
-    const message = $('adminLoginMessage');
-    const submitButton = $('adminLoginSubmit');
-    const adminManagement = $('adminManagement');
-
-    let clickCount = 0, clickResetTimer = null;
-    let wrongAttempts = 0, lockoutCount = 0, lockoutUntil = 0, countdownInterval = null;
-
-    function lockSubmit(locked) {
-      submitButton.disabled = locked;
-      submitButton.style.opacity = locked ? '0.5' : '1';
-      submitButton.style.cursor = locked ? 'not-allowed' : 'pointer';
-    }
-
-    function openLogin() {
-      if (Date.now() < lockoutUntil) {
-        loginModal.classList.add('open');
-        updateLockoutMessage();
-        return;
-      }
-      message.textContent = '';
-      message.className = 'text-gray-400';
-      loginModal.classList.add('open');
-      usernameInput.focus();
-    }
-
-    function closeLogin() {
-      loginModal.classList.remove('open');
-      loginForm.reset();
-      message.textContent = '';
-    }
-
-    function updateLockoutMessage() {
-      const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
-      if (remaining > 0) {
-        message.textContent = `Too many incorrect attempts. Try again in ${remaining} seconds.`;
-        message.className = 'text-red-400';
-        lockSubmit(true);
-      } else {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-        lockoutUntil = 0;
-        message.textContent = 'You can try logging in again.';
-        message.className = 'text-gray-400';
-        lockSubmit(false);
+  async function loadProfile(user) {
+    let profile = await auth.getProfile(user.id);
+    if (!profile) {
+      // Safety net: create the row from signup data if the database trigger did not.
+      const m = user.user_metadata || {};
+      const age = Number(m.age);
+      if (m.full_name && m.username && Number.isInteger(age) && age >= 18) {
+        const { error } = await auth.client.from('profiles').insert({
+          id: user.id,
+          full_name: String(m.full_name),
+          username: String(m.username),
+          age
+        });
+        if (error) console.error('Profile create error:', error);
+        else profile = await auth.getProfile(user.id);
       }
     }
-
-    function startLockout() {
-      lockoutCount++;
-      const durationSeconds = lockoutCount * 30;
-      lockoutUntil = Date.now() + durationSeconds * 1000;
-      message.textContent = `Too many incorrect attempts. Locked for ${durationSeconds} seconds.`;
-      message.className = 'text-red-400';
-      lockSubmit(true);
-      if (countdownInterval) clearInterval(countdownInterval);
-      countdownInterval = setInterval(updateLockoutMessage, 250);
-    }
-
-    // Three quick clicks on the red line open the admin login.
-    secretLine.addEventListener('click', () => {
-      clickCount++;
-      clearTimeout(clickResetTimer);
-      if (clickCount >= 3) { clickCount = 0; openLogin(); return; }
-      clickResetTimer = setTimeout(() => { clickCount = 0; }, 1800);
-    });
-
-    loginForm.addEventListener('submit', event => {
-      event.preventDefault();
-      if (Date.now() < lockoutUntil) { updateLockoutMessage(); return; }
-
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
-
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        adminManagement.style.display = 'block';
-        closeLogin();
-        adminManagement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        wrongAttempts = 0; lockoutCount = 0; lockoutUntil = 0;
-        return;
-      }
-
-      wrongAttempts++;
-      passwordInput.value = '';
-      if (wrongAttempts >= 3) {
-        wrongAttempts = 0;
-        startLockout();
-      } else {
-        message.textContent = `Incorrect username or password. ${3 - wrongAttempts} attempt(s) left before lockout.`;
-        message.className = 'text-red-400';
-      }
-    });
-
-    $('adminLoginClose').addEventListener('click', closeLogin);
-    loginModal.addEventListener('click', e => { if (e.target === loginModal) closeLogin(); });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && loginModal.classList.contains('open')) closeLogin();
-    });
+    return profile;
   }
 
   function setupProfileEditing() {
@@ -213,34 +124,18 @@ tailwind.config = {
       fullName: $('editFullName'), username: $('editUsername'),
       gmail: $('editGmail'), age: $('editAge')
     };
-    const display = {
-      fullName: $('profFullName'), username: $('profUsername'),
-      gmail: $('profGmail'), age: $('profAge')
-    };
 
-    function readCurrentProfile() {
-      let saved = {};
-      try { saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}'); } catch (_) {}
-      return {
-        fullName: saved.fullName ?? display.fullName.textContent.trim(),
-        username: saved.username ?? display.username.textContent.trim(),
-        gmail: saved.gmail ?? display.gmail.textContent.trim(),
-        age: saved.age ?? display.age.textContent.trim()
-      };
-    }
-
-    function applyProfile(profile) {
-      display.fullName.textContent = profile.fullName || '---';
-      display.username.textContent = profile.username || '---';
-      display.gmail.textContent = profile.gmail || '---';
-      display.age.textContent = profile.age || '---';
+    function say(text, cls) {
+      message.textContent = text;
+      message.className = cls;
     }
 
     function openEditor() {
-      const profile = readCurrentProfile();
-      Object.keys(fields).forEach(k => {
-        fields[k].value = profile[k] === '---' ? '' : profile[k];
-      });
+      const p = currentProfile || {};
+      fields.fullName.value = p.full_name || '';
+      fields.username.value = p.username || '';
+      fields.gmail.value = (currentUser && currentUser.email) || '';
+      fields.age.value = p.age || '';
       message.textContent = '';
       modal.classList.add('open');
       fields.fullName.focus();
@@ -255,55 +150,72 @@ tailwind.config = {
       if (e.key === 'Escape' && modal.classList.contains('open')) closeEditor();
     });
 
-    form.addEventListener('submit', event => {
+    form.addEventListener('submit', async event => {
       event.preventDefault();
-      const profile = {
-        fullName: fields.fullName.value.trim(),
-        username: fields.username.value.trim(),
-        gmail: fields.gmail.value.trim(),
-        age: fields.age.value.trim()
-      };
-      if (!profile.fullName || !profile.username || !profile.gmail || !profile.age ||
-          Number(profile.age) < 1 || Number(profile.age) > 120) {
-        message.textContent = 'Please enter valid details in every field.';
-        message.className = 'text-red-400';
-        return;
-      }
+      const fullName = fields.fullName.value.trim();
+      const username = fields.username.value.trim();
+      const age = Number(fields.age.value);
+
+      if (!fullName || !username || !fields.age.value) return say('Please enter valid details in every field.', 'text-red-400');
+      if (!/^[a-zA-Z0-9_]{3,24}$/.test(username)) return say('Username must be 3–24 letters, numbers, or underscores.', 'text-red-400');
+      if (!Number.isInteger(age) || age < 18 || age > 120) return say('Age must be a whole number between 18 and 120.', 'text-red-400');
+
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      say('Saving...', 'text-gray-400');
       try {
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-        applyProfile(profile);
-        message.textContent = 'Profile details saved on this browser.';
-        message.className = 'text-green-400';
+        const { data, error } = await auth.client
+          .from('profiles')
+          .update({ full_name: fullName, username, age })
+          .eq('id', currentUser.id)
+          .select('id, full_name, username, age');
+
+        if (error) {
+          if (error.code === '23505') say('That username is already taken.', 'text-red-400');
+          else if (error.code === '23514') say('Age must be between 18 and 120.', 'text-red-400');
+          else { console.error(error); say('Could not save. Please try again.', 'text-red-400'); }
+          return;
+        }
+        if (!data || !data.length) {
+          say('Profile not found. Please logout and login again.', 'text-red-400');
+          return;
+        }
+        currentProfile = data[0];
+        renderProfile();
         closeEditor();
-      } catch (_) {
-        message.textContent = 'Could not save. Please check browser storage settings.';
-        message.className = 'text-red-400';
+      } catch (err) {
+        console.error(err);
+        say('Could not save. Please try again.', 'text-red-400');
+      } finally {
+        submit.disabled = false;
       }
     });
-
-    // Re-apply details saved earlier on this browser.
-    try {
-      const saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
-      if (saved && typeof saved === 'object') applyProfile(saved);
-    } catch (_) {}
   }
 
-  function init() {
-    if (!requireUser()) return;
+  async function init() {
+    const user = await auth.requireUser();
+    if (!user) return;
+    currentUser = user;
     startParticles();
-    const u = session();
-    setText('profFullName', u.fullName);
-    setText('profUsername', '@' + u.username);
-    setText('profGmail', u.gmail);
-    setText('profAge', u.age + ' years old');
-    $('btnLogout').onclick = () => {
-      localStorage.removeItem(SESSION_KEY);
+
+    $('btnLogout').onclick = async () => {
+      await auth.signOut();
       location.href = 'index.html';
     };
-    setupAdminLogin();
     setupProfileEditing();
+
+    currentProfile = await loadProfile(user);
+    renderProfile();
+
+    // Admin tools are shown ONLY if the database says this account is an admin.
+    if (await auth.isAdmin(user.id)) {
+      $('adminManagement').style.display = 'block';
+    }
   }
 
-  ready(init);
+  ready(() => init().catch(err => {
+    console.error(err);
+    alert('Could not load your profile. Please refresh the page.');
+  }));
 
 })();
