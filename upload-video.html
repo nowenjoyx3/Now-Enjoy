@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Upload Video | NOW ENJOY</title>
+
+    <link rel="shortcut icon" href="logo/Logo.png" type="image/png">
+    
+    <meta name="description" content="Now Enjoy has free HD porn videos, hot anime sex, naughty cartoon XXX and 3D 
+    hardcore movies. Tons of adult comics, doujinshi and manga to read.">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050307">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/upload-video.js"></script>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Orbitron:wght@600;800;900&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="css/upload-video.css">
+    </head>
+
+<body class="bg-obsidian min-h-screen flex flex-col relative selection:bg-crimson-600 selection:text-white"
+>
+    <canvas id="particles-canvas" aria-hidden="true"></canvas>
+
+    <div
+        class="fixed inset-0 bg-radial from-transparent via-obsidian/80 to-obsidian pointer-events-none z-0"
+    ></div>
+
+    <div class="relative z-10 flex-1 flex flex-col w-full min-h-screen">
+
+        <header
+            class="bg-darkcard/90 border-b border-crimson-900/60 sticky top-0 z-40 backdrop-blur-md px-4 py-3"
+        >
+            <div
+                class="max-w-7xl mx-auto flex items-center justify-between gap-3"
+            >
+                <a
+                    href="home.html"
+                    class="flex items-center gap-2"
+                    aria-label="NOW ENJOY Home"
+                >
+                    <i
+                        class="fa-solid fa-crown text-crimson-500 text-2xl animate-pulse"
+                    ></i>
+
+                    <span
+                        class="font-cinzel text-xl sm:text-2xl font-black text-white tracking-wider"
+                    >
+                        NOW <span class="shimmer-text">ENJOY</span>
+                    </span>
+                </a>
+
+                <nav
+                    class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 text-[10px] sm:text-xs font-gothic"
+                >
+                    <a class="nav-btn" href="home.html">
+                        <i class="fa-solid fa-house"></i>
+                        <span>Home</span>
+                    </a>
+
+                    <a class="nav-btn" href="playlists.html">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span>Playlists</span>
+                    </a>
+
+                    <a class="nav-btn" href="upload-video.html">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Upload</span>
+                    </a>
+
+                    <a class="nav-btn" href="profile.html">
+                        <i class="fa-solid fa-user-ninja"></i>
+                        <span>Profile</span>
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="flex-1 w-full max-w-3xl mx-auto p-4 sm:p-8">
+            <section class="gothic-frame aura-glow p-6 sm:p-8">
+
+                <h1 class="font-cinzel text-2xl font-black text-white mb-2">
+                    UPLOAD VIDEO
+                </h1>
+
+                <p class="text-xs text-gray-400 mb-6">
+                    Add a video and thumbnail to your library.
+                </p>
+
+                <form id="formUploadVideo" class="space-y-4">
+
+                    <label class="field-label">
+                        THUMBNAIL IMAGE *
+
+                        <input
+                            type="file"
+                            id="videoThumbInput"
+                            accept="image/*"
+                            class="gothic-input w-full p-2 rounded-xl mt-1"
+                            required
+                        >
+                    </label>
+
+                    <div id="videoThumbPreview" class="preview hidden">
+                        <img alt="Video thumbnail preview">
+                    </div>
+
+                    <label class="field-label">
+                        VIDEO FILE (MP4 / WEBM) *
+
+                        <input
+                            type="file"
+                            id="videoFileInput"
+                            accept="video/mp4,video/webm"
+                            class="gothic-input w-full p-2 rounded-xl mt-1"
+                            required
+                        >
+                    </label>
+
+                    <label class="field-label">
+                        VIDEO TITLE *
+
+                        <input
+                            type="text"
+                            id="videoTitleInput"
+                            class="gothic-input w-full px-3 py-3 rounded-xl mt-1"
+                            required
+                        >
+                    </label>
+
+                    <label class="field-label">
+                        ADD TO PLAYLIST
+
+                        <select
+                            id="videoPlaylistSelect"
+                            class="gothic-input w-full px-3 py-3 rounded-xl mt-1"
+                        >
+                            <option value="">
+                                -- No Playlist (General Library) --
+                            </option>
+                        </select>
+                    </label>
+
+                    <button
+                        type="submit"
+                        class="btn-crimson w-full py-3 rounded-xl"
+                    >
+                        UPLOAD VIDEO
+                    </button>
+
+                    <p
+                        id="uploadStatus"
+                        class="text-xs text-gray-400"
+                    ></p>
+
+                </form>
+            </section>
+        </main>
+
+    </div>
+
+    <footer
+        class="relative z-10 py-3 text-center text-[11px] text-gray-500 border-t border-crimson-900/30 bg-obsidian/90"
+    >
+        © NOW ENJOY : "This website is strictly for adults (18+) only"
+    </footer>
+</body>
+</html>
