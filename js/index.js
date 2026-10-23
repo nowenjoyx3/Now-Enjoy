@@ -82,59 +82,36 @@ tailwind.config = {
     animate();
   }
 
-  const DB_NAME = 'NowEnjoyMediaDB';
-  const DB_VERSION = 1;
-  let db;
-
-  const initDB = () => new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('users')) d.createObjectStore('users', { keyPath: 'username' });
-      if (!d.objectStoreNames.contains('playlists')) d.createObjectStore('playlists', { keyPath: 'id' });
-      if (!d.objectStoreNames.contains('videos')) d.createObjectStore('videos', { keyPath: 'id' });
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = () => reject(req.error);
-  });
-
-  const dbPut = (store, item) => new Promise((resolve, reject) => {
-    const tx = db.transaction(store, 'readwrite');
-    tx.objectStore(store).put(item);
-    tx.oncomplete = () => resolve(item);
-    tx.onerror = () => reject(tx.error);
-  });
-
-  const dbGetAll = store => new Promise((resolve, reject) => {
-    const r = db.transaction(store, 'readonly').objectStore(store).getAll();
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
-
-  const alertText = (id, msg) => {
-    if ($(id)) { $(id).textContent = msg; $(id).classList.remove('hidden'); }
+  const auth = window.NowEnjoyAuth || {
+    ready: false,
+    getSession: async () => null,
+    purgeLegacyUsers() {}
   };
 
-  const hide = id => { if ($(id)) $(id).classList.add('hidden'); };
+  function showAlert(boxId, textId, msg, kind) {
+    const box = $(boxId), text = $(textId);
+    if (!box || !text) return;
+    text.textContent = msg;
+    box.classList.remove('hidden');
+    if (kind === 'success') {
+      box.style.background = '#052e1699';
+      box.style.borderColor = '#22c55e';
+      box.style.color = '#bbf7d0';
+    } else {
+      box.style.background = '';
+      box.style.borderColor = '';
+      box.style.color = '';
+    }
+  }
 
-  const SESSION_KEY = 'now_enjoy_session_user';
-  const session = () => {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
-    catch { return null; }
-  };
+  const hideAlert = id => { if ($(id)) $(id).classList.add('hidden'); };
 
-
-  const OWNER_EMAIL = 'DracoAura099@gmail.com';
-  const OWNER_PASSWORD = 'DracoAura099@Hacker';
-  const makeOwnerUser = () => ({
-    fullName: 'Draco Aura', username: 'DracoAura099', gmail: OWNER_EMAIL,
-    age: '', role: 'owner', createdAt: new Date().toISOString()
-  });
-
-  async function hashPassword(password) {
-    const data = new TextEncoder().encode(password + '_NOW_ENJOY_SALT_2026');
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  function setBusy(form, busy) {
+    const b = form.querySelector('button[type="submit"]');
+    if (!b) return;
+    b.disabled = busy;
+    b.style.opacity = busy ? '0.6' : '';
+    b.style.cursor = busy ? 'not-allowed' : '';
   }
 
   function setupToggle(buttonId, inputId) {
@@ -146,10 +123,30 @@ tailwind.config = {
     };
   }
 
+  const msgOf = err => String((err && err.message) || '').toLowerCase();
+
+  function loginErrorText(err) {
+    const m = msgOf(err);
+    if (m.includes('invalid login credentials')) return 'Invalid email or password credentials!';
+    if (m.includes('email not confirmed')) return 'Please confirm your Gmail first. Check your inbox (and spam folder) for the confirmation link.';
+    if (err && (err.status === 429 || m.includes('rate limit'))) return 'Too many attempts. Please wait a few minutes and try again.';
+    return 'Unable to log in. Please try again.';
+  }
+
+  function signupErrorText(err) {
+    const m = msgOf(err);
+    const code = String((err && err.code) || '');
+    if (code === 'user_already_exists' || m.includes('already registered')) return 'This Gmail is already registered. Please login.';
+    if (code === 'weak_password' || m.includes('password should') || m.includes('weak password')) return 'Password is too weak. Please choose a stronger password.';
+    if (err && (err.status === 429 || m.includes('rate limit'))) return 'Too many sign-up attempts or emails sent. Please wait a while and try again.';
+    if (m.includes('database error saving new user')) return 'Could not create the account. Please make sure your username is unique and that you are 18 or older.';
+    if (m.includes('invalid') && m.includes('email')) return 'Please enter a valid Gmail address.';
+    return 'Unable to create account. Please try again.';
+  }
+
   async function init() {
     startParticles();
-    await initDB();
-    if (session()) { location.replace('home.html'); return; }
+    auth.purgeLegacyUsers();
 
     const loginCard = $('loginCard'), regCard = $('registerCard');
     $('btnGotoRegister').onclick = () => { loginCard.classList.add('hidden'); regCard.classList.remove('hidden'); };
@@ -160,71 +157,117 @@ tailwind.config = {
 
     $('loginForm').onsubmit = async e => {
       e.preventDefault();
-      hide('loginAlert');
-      const email = $('loginEmail').value.trim(), pass = $('loginPassword').value;
-      if (!email || !pass) { alertText('loginAlertText', 'Please enter both Gmail and password.'); return; }
+      hideAlert('loginAlert');
+      if (!auth.ready) {
+        showAlert('loginAlert', 'loginAlertText', 'Login service is not available. Please refresh the page.');
+        return;
+      }
+      const form = e.target;
+      const email = $('loginEmail').value.trim().toLowerCase();
+      const pass = $('loginPassword').value;
+      if (!email || !pass) {
+        showAlert('loginAlert', 'loginAlertText', 'Please enter both Gmail and password.');
+        return;
+      }
+      setBusy(form, true);
       try {
-        let user;
-        if (email.toLowerCase() === OWNER_EMAIL.toLowerCase() && pass === OWNER_PASSWORD) {
-          user = makeOwnerUser();
-        } else {
-          const users = await dbGetAll('users'), hash = await hashPassword(pass);
-          user = users.find(u => u.gmail.toLowerCase() === email.toLowerCase() && u.passwordHash === hash);
+        const { error } = await auth.client.auth.signInWithPassword({ email, password: pass });
+        if (error) {
+          showAlert('loginAlert', 'loginAlertText', loginErrorText(error));
+          return;
         }
-        if (!user) { alertText('loginAlertText', 'Invalid email or password credentials!'); return; }
-        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
         location.href = 'home.html';
       } catch (err) {
-        alertText('loginAlertText', 'Unable to log in. Please try again.');
         console.error(err);
+        showAlert('loginAlert', 'loginAlertText', 'Unable to log in. Please try again.');
+      } finally {
+        setBusy(form, false);
       }
     };
 
     $('registerForm').onsubmit = async e => {
       e.preventDefault();
-      hide('regAlert');
-      const fullName = $('regFullName').value.trim(),
-        username = $('regUsername').value.trim(),
-        gmail = $('regGmail').value.trim(),
-        password = $('regPassword').value,
-        repeat = $('regRepeatPassword').value,
-        age = Number($('regAge').value);
-      if (!fullName || !username || !gmail || !password || !repeat || !$('regAge').value)
-        return alertText('regAlertText', 'All fields are required!');
-      if (!/^[^\s@]+@gmail\.com$/i.test(gmail))
-        return alertText('regAlertText', 'Please enter a valid Gmail address ending in @gmail.com.');
-      if (password.length < 6)
-        return alertText('regAlertText', 'Password must be at least 6 characters.');
-      if (password !== repeat)
-        return alertText('regAlertText', 'Passwords do not match!');
-      if (!Number.isInteger(age) || age < 13 || age > 120)
-        return alertText('regAlertText', 'Age must be between 13 and 120.');
-      if (!/^[a-zA-Z0-9_]{3,24}$/.test(username))
-        return alertText('regAlertText', 'Username must be 3–24 letters, numbers, or underscores.');
+      hideAlert('regAlert');
+      const say = (msg, kind) => showAlert('regAlert', 'regAlertText', msg, kind);
+      if (!auth.ready) { say('Sign-up service is not available. Please refresh the page.'); return; }
+
+      const form = e.target;
+      const fullName = $('regFullName').value.trim();
+      const username = $('regUsername').value.trim();
+      const gmail = $('regGmail').value.trim().toLowerCase();
+      const password = $('regPassword').value;
+      const repeat = $('regRepeatPassword').value;
+      const ageRaw = $('regAge').value;
+      const age = Number(ageRaw);
+
+      if (!fullName || !username || !gmail || !password || !repeat || !ageRaw) return say('All fields are required!');
+      if (fullName.length > 100) return say('Name is too long (maximum 100 characters).');
+      if (!/^[^\s@]+@gmail\.com$/i.test(gmail)) return say('Please enter a valid Gmail address ending in @gmail.com.');
+      if (password.length < 6) return say('Password must be at least 6 characters.');
+      if (password !== repeat) return say('Passwords do not match!');
+      if (!Number.isInteger(age) || age > 120) return say('Please enter a valid age.');
+      if (age < 18) return say('Sorry, you must be at least 18 years old to create an account.');
+      if (!/^[a-zA-Z0-9_]{3,24}$/.test(username)) return say('Username must be 3–24 letters, numbers, or underscores.');
+
+      setBusy(form, true);
       try {
-        const users = await dbGetAll('users');
-        if (users.some(u => u.username.toLowerCase() === username.toLowerCase()))
-          return alertText('regAlertText', 'Username is already taken!');
-        if (users.some(u => u.gmail.toLowerCase() === gmail.toLowerCase()))
-          return alertText('regAlertText', 'This Gmail is already registered.');
-        const user = {
-          fullName, username, gmail,
-          passwordHash: await hashPassword(password),
-          age, createdAt: new Date().toISOString()
-        };
-        await dbPut('users', user);
-        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-        location.href = 'home.html';
+        // 1) Friendly username check (the database also enforces uniqueness).
+        const check = await auth.client.rpc('is_username_available', { p_username: username });
+        if (check.error) {
+          console.error(check.error);
+          say('Sign-up is not fully set up yet (database setup missing). Please contact the site owner.');
+          return;
+        }
+        if (check.data === false) return say('Username is already taken!');
+
+        // 2) Create the account with Supabase Auth.
+        //    full_name / username / age travel as metadata; a database trigger saves them into public.profiles.
+        const { data, error } = await auth.client.auth.signUp({
+          email: gmail,
+          password,
+          options: {
+            data: { full_name: fullName, username, age },
+            emailRedirectTo: new URL('./', location.href).href
+          }
+        });
+        if (error) { say(signupErrorText(error)); return; }
+
+        // Supabase hides "already registered" emails by returning a user with no identities.
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          say('This Gmail is already registered. Please login.');
+          return;
+        }
+
+        // Email confirmation OFF -> we already have a session.
+        if (data.session) { location.href = 'home.html'; return; }
+
+        // Email confirmation ON -> account is NOT active until the link is clicked.
+        form.reset();
+        say('Almost done! We sent a confirmation link to ' + gmail + '. Your account becomes active only after you confirm your email. Check your inbox (and spam folder), click the link, then login.', 'success');
       } catch (err) {
-        alertText('regAlertText', 'Unable to create account. Please try again.');
         console.error(err);
+        say('Unable to create account. Please try again.');
+      } finally {
+        setBusy(form, false);
       }
     };
+
+    if (!auth.ready) {
+      showAlert('loginAlert', 'loginAlertText', 'Login service could not be loaded. Please check your internet connection and refresh the page.');
+      return;
+    }
+
+    // Already logged in (or just came back from the email-confirmation link)? Go to home.
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const hashError = hashParams.get('error_description');
+    const session = await auth.getSession();
+    if (session) { location.replace('home.html'); return; }
+    if (hashError) showAlert('loginAlert', 'loginAlertText', hashError);
   }
 
   ready(() => init().catch(err => {
     console.error(err);
-    alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
+    showAlert('loginAlert', 'loginAlertText', 'Something went wrong while loading the page. Please refresh and try again.');
   }));
 
 })();
