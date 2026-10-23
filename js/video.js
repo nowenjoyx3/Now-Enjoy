@@ -108,16 +108,8 @@ tailwind.config = {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 
-  const SESSION_KEY = 'now_enjoy_session_user';
-  const session = () => {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
-    catch { return null; }
-  };
-
-  const requireUser = () => {
-    if (!session()) { location.replace('index.html'); return false; }
-    return true;
-  };
+  // Login is handled by Supabase Auth (see js/supabase-client.js).
+  const requireUser = () => NowEnjoyAuth.requireUser();
 
   const dbPut = (store, item) => new Promise((resolve, reject) => {
     const tx = db.transaction(store, 'readwrite');
@@ -201,7 +193,8 @@ tailwind.config = {
   }
 
   async function init() {
-    if (!requireUser()) return;
+    const authUser = await requireUser();
+    if (!authUser) return;
     startParticles();
     await initDB();
     await initVideoPage();
@@ -212,9 +205,10 @@ tailwind.config = {
 
   addEventListener('beforeunload', () => { if (activeVideoUrl) URL.revokeObjectURL(activeVideoUrl); });
 
-  ready(() => init().catch(err => {
+  ready(() => init().catch(async err => {
     console.error(err);
-    if (!session()) location.replace('index.html');
+    const s = await NowEnjoyAuth.getSession();
+    if (!s) location.replace('index.html');
     else alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
   }));
 
