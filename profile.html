@@ -13,6 +13,8 @@
     <meta name="theme-color" content="#050307">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
     <script src="js/profile.js"></script>
 
     <link
@@ -140,13 +142,6 @@
                     </button>
                 </div>
 
-                <button
-                    id="adminSecretLine"
-                    type="button"
-                    aria-label="Open administrator login"
-
-                ></button>
-
                 <div id="adminManagement">
 
                     <div class="mt-6 border-t border-crimson-900/60 pt-5">
@@ -225,11 +220,11 @@
                 <label class="profile-edit-label" for="editUsername">USERNAME</label>
                 <input id="editUsername" class="profile-edit-input" type="text" maxlength="50" autocomplete="username" required>
 
-                <label class="profile-edit-label" for="editGmail">GMAIL</label>
-                <input id="editGmail" class="profile-edit-input" type="email" maxlength="254" autocomplete="email" required>
+                <label class="profile-edit-label" for="editGmail">GMAIL (CANNOT BE CHANGED)</label>
+                <input id="editGmail" class="profile-edit-input" type="email" readonly maxlength="254" autocomplete="email" required>
 
                 <label class="profile-edit-label" for="editAge">AGE</label>
-                <input id="editAge" class="profile-edit-input" type="number" min="1" max="120" required>
+                <input id="editAge" class="profile-edit-input" type="number" min="18" max="120" required>
 
                 <p id="profileEditMessage" class="text-gray-400" aria-live="polite"></p>
                 <button type="submit" class="btn-crimson w-full rounded-xl py-3 mt-2">SAVE CHANGES</button>
@@ -238,80 +233,6 @@
         </div>
     </div>
 
-    <div
-        id="adminLoginModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="adminLoginTitle"
-    >
-        <div class="admin-login-box">
-
-            <div class="text-center">
-                <i class="fa-solid fa-user-shield text-3xl text-crimson-500"></i>
-
-                <h2
-                    id="adminLoginTitle"
-                    class="font-cinzel text-xl font-black text-white mt-3"
-                >
-                    ADMIN LOGIN
-                </h2>
-
-                <p class="text-xs text-gray-400 mt-2">
-                    Enter your administrator credentials
-                </p>
-            </div>
-
-            <form id="adminLoginForm">
-                <label class="admin-login-label" for="adminUsername">
-                    USERNAME
-                </label>
-
-                <input
-                    id="adminUsername"
-                    class="admin-login-input"
-                    type="text"
-                    placeholder="Enter username"
-                    autocomplete="username"
-                    required
-                >
-
-                <label class="admin-login-label" for="adminPassword">
-                    PASSWORD
-                </label>
-
-                <input
-                    id="adminPassword"
-                    class="admin-login-input"
-                    type="password"
-                    placeholder="Enter password"
-                    autocomplete="current-password"
-                    required
-                >
-
-                <p
-                    id="adminLoginMessage"
-                    class="text-gray-400"
-                    aria-live="polite"
-                ></p>
-
-                <button
-                    id="adminLoginSubmit"
-                    type="submit"
-                    class="btn-crimson w-full rounded-xl py-3 mt-4"
-                >
-                    UNLOCK ADMIN
-                </button>
-
-                <button
-                    id="adminLoginClose"
-                    type="button"
-                    class="btn-secondary w-full rounded-xl py-3 mt-3"
-                >
-                    CANCEL
-                </button>
-            </form>
-        </div>
-    </div>
 
     <footer
         class="relative z-10 py-3 text-center text-[11px] text-gray-500 border-t border-crimson-900/30 bg-obsidian/90"
