@@ -13,6 +13,8 @@
     <meta name="theme-color" content="#050307">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
     <script src="js/index.js"></script>
 
     <link
@@ -255,12 +257,12 @@
                         </label>
 
                         <label class="field-label">
-                            6. AGE *
+                            6. AGE (18+ ONLY) *
 
                             <input
                                 type="number"
                                 id="regAge"
-                                min="13"
+                                min="18"
                                 max="120"
                                 placeholder="e.g. 21"
                                 class="gothic-input w-full px-3 py-2 rounded-lg text-xs mt-1"
