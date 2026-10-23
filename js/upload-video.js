@@ -108,16 +108,8 @@ tailwind.config = {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 
-  const SESSION_KEY = 'now_enjoy_session_user';
-  const session = () => {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
-    catch { return null; }
-  };
-
-  const requireUser = () => {
-    if (!session()) { location.replace('index.html'); return false; }
-    return true;
-  };
+  // Admin-only page: the role is checked against Supabase (profiles.is_admin).
+  const requireUser = () => NowEnjoyAuth.requireAdmin();
 
   const dbPut = (store, item) => new Promise((resolve, reject) => {
     const tx = db.transaction(store, 'readwrite');
@@ -157,7 +149,8 @@ tailwind.config = {
   let tempVideo = null;
 
   async function init() {
-    if (!requireUser()) return;
+    const authUser = await requireUser();
+    if (!authUser) return;
     startParticles();
     await initDB();
 
@@ -197,7 +190,7 @@ tailwind.config = {
           dislikes: 0,
           playlistId: playlistId || null,
           uploadedAt: new Date().toISOString(),
-          uploadedBy: session().username
+          uploadedBy: (authUser.profile && authUser.profile.username) || authUser.user.email
         });
         setText('uploadStatus', 'Video uploaded successfully!');
         e.target.reset();
@@ -212,9 +205,10 @@ tailwind.config = {
     };
   }
 
-  ready(() => init().catch(err => {
+  ready(() => init().catch(async err => {
     console.error(err);
-    if (!session()) location.replace('index.html');
+    const s = await NowEnjoyAuth.getSession();
+    if (!s) location.replace('index.html');
     else alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
   }));
 
