@@ -108,16 +108,8 @@ tailwind.config = {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 
-  const SESSION_KEY = 'now_enjoy_session_user';
-  const session = () => {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
-    catch { return null; }
-  };
-
-  const requireUser = () => {
-    if (!session()) { location.replace('index.html'); return false; }
-    return true;
-  };
+  // Login is handled by Supabase Auth (see js/supabase-client.js).
+  const requireUser = () => NowEnjoyAuth.requireUser();
 
   function cardPlaylist(p, count) {
     return `<article class="gothic-frame media-card" tabindex="0" role="link" data-open-playlist="${esc(p.id)}"><img src="${p.cover}" alt="${esc(p.title)} cover"><h3>${esc(p.title)}</h3><p>${count} Videos</p></article>`;
@@ -177,7 +169,8 @@ tailwind.config = {
   }
 
   async function init() {
-    if (!requireUser()) return;
+    const authUser = await requireUser();
+    if (!authUser) return;
     startParticles();
     setupPlaylistSearch();
     await initDB();
@@ -185,9 +178,10 @@ tailwind.config = {
     setupCardClicks();
   }
 
-  ready(() => init().catch(err => {
+  ready(() => init().catch(async err => {
     console.error(err);
-    if (!session()) location.replace('index.html');
+    const s = await NowEnjoyAuth.getSession();
+    if (!s) location.replace('index.html');
     else alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
   }));
 
