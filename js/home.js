@@ -131,10 +131,16 @@ tailwind.config = {
   }
 
 
-  async function loadVideos(term = '') {
+  let currentTerm = '';
+
+  async function loadVideos(term = currentTerm) {
+    currentTerm = term;
     const box = $('videoCardsContainer');
     const all = await dbGetAll('videos');
-    const list = all.filter(v => (v.title || '').toLowerCase().includes(term));
+    const list = all.filter(v =>
+      (v.title || '').toLowerCase().includes(term) &&
+      (selectedCats.size === 0 || selectedCats.has(v.category))
+    );
     box.innerHTML = list.map(cardVideo).join('');
     $('emptyVideos').classList.toggle('hidden', list.length > 0);
   }
@@ -173,6 +179,43 @@ tailwind.config = {
     });
   }
 
+  // Selected categories from the Filter menu (empty = show everything).
+  const selectedCats = new Set();
+
+  function setupCategoryFilter(onChange) {
+    const btn = $('filterBtn'), menu = $('filterMenu'), count = $('filterCount');
+    if (!btn || !menu) return;
+    const boxes = () => menu.querySelectorAll('input[type="checkbox"]');
+
+    const sync = () => {
+      count.textContent = selectedCats.size;
+      count.classList.toggle('hidden', selectedCats.size === 0);
+      btn.classList.toggle('active', selectedCats.size > 0);
+    };
+    const setOpen = open => {
+      menu.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', String(open));
+    };
+
+    btn.addEventListener('click', e => { e.stopPropagation(); setOpen(menu.classList.contains('hidden')); });
+    menu.addEventListener('click', e => e.stopPropagation());
+    document.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
+
+    boxes().forEach(cb => cb.addEventListener('change', () => {
+      if (cb.checked) selectedCats.add(cb.value); else selectedCats.delete(cb.value);
+      sync();
+      onChange();
+    }));
+
+    $('filterClear').addEventListener('click', () => {
+      selectedCats.clear();
+      boxes().forEach(cb => { cb.checked = false; });
+      sync();
+      onChange();
+    });
+  }
+
   async function init() {
     setupAgeVerification();
     const authUser = await requireUser();
@@ -181,6 +224,7 @@ tailwind.config = {
     await initDB();
     await loadVideos();
     $('searchInput').oninput = e => loadVideos(e.target.value.toLowerCase().trim());
+    setupCategoryFilter(() => loadVideos());
     setupCardClicks();
   }
 
