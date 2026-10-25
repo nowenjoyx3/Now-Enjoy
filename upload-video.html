@@ -68,15 +68,7 @@
                 <nav
                     class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 text-[10px] sm:text-xs font-gothic"
                 >
-                    <a class="nav-btn" href="home.html">
-                        <i class="fa-solid fa-house"></i>
-                        <span>Home</span>
-                    </a>
 
-                    <a class="nav-btn" href="playlists.html">
-                        <i class="fa-solid fa-layer-group"></i>
-                        <span>Playlists</span>
-                    </a>
 
                     <a class="nav-btn" href="upload-video.html">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
@@ -153,6 +145,23 @@
                             <option value="">
                                 -- No Playlist (General Library) --
                             </option>
+                        </select>
+                    </label>
+
+                    <label class="field-label">
+                        CATEGORY *
+
+                        <select
+                            id="videoCategorySelect"
+                            class="gothic-input w-full px-3 py-3 rounded-xl mt-1"
+                            required
+                        >
+                            <option value="">-- Select Category --</option>
+                            <option value="real-life">Real Life (Humans)</option>
+                            <option value="3d">3D</option>
+                            <option value="donghua">Donghua</option>
+                            <option value="anime">Anime</option>
+                            <option value="cartoon">Cartoon</option>
                         </select>
                     </label>
 
