@@ -317,3 +317,115 @@ to{background-position:200% 0}
 body.age-locked {
   overflow: hidden;
 }
+
+
+/* ---- Video / Playlist tabs + category filter ---- */
+.view-tabs {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+}
+
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem 1.1rem;
+  border-radius: .75rem;
+  background: #0d070f;
+  border: 1px solid #4a000b;
+  color: #9ca3af;
+  font: 600 11px 'Orbitron', sans-serif;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.view-tab i {
+  color: #ff2a55;
+}
+
+.view-tab:hover {
+  color: #fff;
+  border-color: #ff003380;
+}
+
+.view-tab.active {
+  color: #fff;
+  border-color: #ff0033;
+  background: #4a000b66;
+  box-shadow: 0 0 14px #ff0033b3, inset 0 0 8px #ff003340;
+}
+
+.filter-wrap {
+  position: relative;
+}
+
+.filter-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 .3rem;
+  border-radius: 999px;
+  background: #ff0033;
+  color: #fff;
+  font-size: 9px;
+}
+
+.filter-count.hidden {
+  display: none;
+}
+
+.filter-menu {
+  position: absolute;
+  top: calc(100% + .5rem);
+  left: 0;
+  z-index: 30;
+  min-width: 13rem;
+  padding: .6rem;
+  background: #0d070f;
+  border: 1px solid #ff0033;
+  border-radius: .85rem;
+  box-shadow: 0 0 20px #ff003366;
+}
+
+.filter-menu.hidden {
+  display: none;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .5rem .6rem;
+  border-radius: .5rem;
+  color: #e2e8f0;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.filter-option:hover {
+  background: #4a000b66;
+}
+
+.filter-option input {
+  accent-color: #ff0033;
+  width: 1rem;
+  height: 1rem;
+}
+
+.filter-clear {
+  width: 100%;
+  margin-top: .4rem;
+  padding: .5rem;
+  border-top: 1px solid #27272a;
+  color: #ff2a55;
+  font: 600 10px 'Orbitron', sans-serif;
+}
+
+.filter-clear:hover {
+  color: #fff;
+}
