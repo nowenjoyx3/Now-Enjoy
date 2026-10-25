@@ -175,8 +175,13 @@ tailwind.config = {
       e.preventDefault();
       const title = $('videoTitleInput').value.trim();
       const playlistId = $('videoPlaylistSelect').value;
+      const category = $('videoCategorySelect').value;
       if (!title || !tempThumb || !tempVideo) {
         setText('uploadStatus', 'Thumbnail, video file, and title are required.');
+        return;
+      }
+      if (!category) {
+        setText('uploadStatus', 'Please select a category.');
         return;
       }
       try {
@@ -189,6 +194,7 @@ tailwind.config = {
           likes: 0,
           dislikes: 0,
           playlistId: playlistId || null,
+          category,
           uploadedAt: new Date().toISOString(),
           uploadedBy: (authUser.profile && authUser.profile.username) || authUser.user.email
         });
