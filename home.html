@@ -111,15 +111,7 @@
                 </a>
 
                 <nav class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 text-[10px] sm:text-xs font-gothic">
-                    <a class="nav-btn" href="home.html">
-                        <i class="fa-solid fa-house"></i>
-                        <span>Home</span>
-                    </a>
 
-                    <a class="nav-btn" href="playlists.html">
-                        <i class="fa-solid fa-layer-group"></i>
-                        <span>Playlists</span>
-                    </a>
 
                     <a class="nav-btn" href="profile.html">
                         <i class="fa-solid fa-user-ninja"></i>
@@ -149,6 +141,32 @@
                     placeholder="Search videos..."
                     class="gothic-input w-full sm:max-w-sm px-4 py-3 rounded-xl text-xs"
                 >
+            </div>
+
+            <div class="view-tabs">
+                <a href="home.html" class="view-tab active" aria-current="page">
+                    <i class="fa-solid fa-film"></i> Video
+                </a>
+
+                <a href="playlists.html" class="view-tab">
+                    <i class="fa-solid fa-layer-group"></i> Playlist
+                </a>
+
+                <div class="filter-wrap">
+                    <button type="button" id="filterBtn" class="view-tab filter-btn" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa-solid fa-filter"></i> Filter
+                        <span id="filterCount" class="filter-count hidden">0</span>
+                    </button>
+
+                    <div id="filterMenu" class="filter-menu hidden">
+                        <label class="filter-option"><input type="checkbox" value="real-life"><span>Real Life (Humans)</span></label>
+                        <label class="filter-option"><input type="checkbox" value="3d"><span>3D</span></label>
+                        <label class="filter-option"><input type="checkbox" value="donghua"><span>Donghua</span></label>
+                        <label class="filter-option"><input type="checkbox" value="anime"><span>Anime</span></label>
+                        <label class="filter-option"><input type="checkbox" value="cartoon"><span>Cartoon</span></label>
+                        <button type="button" id="filterClear" class="filter-clear">Clear all</button>
+                    </div>
+                </div>
             </div>
 
             <div id="videoCardsContainer" class="content-grid"></div>
