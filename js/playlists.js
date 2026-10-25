@@ -111,8 +111,8 @@ tailwind.config = {
   // Login is handled by Supabase Auth (see js/supabase-client.js).
   const requireUser = () => NowEnjoyAuth.requireUser();
 
-  function cardPlaylist(p, count) {
-    return `<article class="gothic-frame media-card" tabindex="0" role="link" data-open-playlist="${esc(p.id)}"><img src="${p.cover}" alt="${esc(p.title)} cover"><h3>${esc(p.title)}</h3><p>${count} Videos</p></article>`;
+  function cardPlaylist(p, count, cats = []) {
+    return `<article class="gothic-frame media-card" tabindex="0" role="link" data-open-playlist="${esc(p.id)}" data-categories="${esc(cats.join(','))}"><img src="${p.cover}" alt="${esc(p.title)} cover"><h3>${esc(p.title)}</h3><p>${count} Videos</p></article>`;
   }
 
   function setupCardClicks() {
@@ -134,7 +134,11 @@ tailwind.config = {
   async function loadPlaylists() {
     const box = $('playlistCardsContainer');
     const [pls, vids] = await Promise.all([dbGetAll('playlists'), dbGetAll('videos')]);
-    box.innerHTML = pls.map(p => cardPlaylist(p, vids.filter(v => v.playlistId === p.id).length)).join('');
+    box.innerHTML = pls.map(p => {
+      const mine = vids.filter(v => v.playlistId === p.id);
+      const cats = [...new Set(mine.map(v => v.category).filter(Boolean))];
+      return cardPlaylist(p, mine.length, cats);
+    }).join('');
     $('emptyPlaylists').classList.toggle('hidden', pls.length > 0);
   }
 
@@ -152,13 +156,17 @@ tailwind.config = {
       let visibleCount = 0;
 
       cards.forEach(card => {
-        const matches = !query || normalize(card.innerText || card.textContent).includes(query);
+        // A playlist matches a category if at least one of its videos has that category.
+        const cats = (card.dataset.categories || '').split(',');
+        const catOk = selectedCats.size === 0 || cats.some(c => selectedCats.has(c));
+        const matches = catOk && (!query || normalize(card.innerText || card.textContent).includes(query));
         card.hidden = !matches;
         if (matches) visibleCount++;
       });
 
-      noResultsMessage.classList.toggle('hidden', !query || visibleCount > 0);
-      emptyMessage.classList.toggle('hidden', cards.length > 0 || Boolean(query));
+      const filtering = Boolean(query) || selectedCats.size > 0;
+      noResultsMessage.classList.toggle('hidden', !filtering || visibleCount > 0);
+      emptyMessage.classList.toggle('hidden', cards.length > 0 || filtering);
     }
 
     input.addEventListener('input', filterPlaylists);
@@ -166,13 +174,52 @@ tailwind.config = {
       childList: true, subtree: true, characterData: true
     });
     filterPlaylists();
+    return filterPlaylists;
+  }
+
+  // Selected categories from the Filter menu (empty = show everything).
+  const selectedCats = new Set();
+
+  function setupCategoryFilter(onChange) {
+    const btn = $('filterBtn'), menu = $('filterMenu'), count = $('filterCount');
+    if (!btn || !menu) return;
+    const boxes = () => menu.querySelectorAll('input[type="checkbox"]');
+
+    const sync = () => {
+      count.textContent = selectedCats.size;
+      count.classList.toggle('hidden', selectedCats.size === 0);
+      btn.classList.toggle('active', selectedCats.size > 0);
+    };
+    const setOpen = open => {
+      menu.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', String(open));
+    };
+
+    btn.addEventListener('click', e => { e.stopPropagation(); setOpen(menu.classList.contains('hidden')); });
+    menu.addEventListener('click', e => e.stopPropagation());
+    document.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
+
+    boxes().forEach(cb => cb.addEventListener('change', () => {
+      if (cb.checked) selectedCats.add(cb.value); else selectedCats.delete(cb.value);
+      sync();
+      onChange();
+    }));
+
+    $('filterClear').addEventListener('click', () => {
+      selectedCats.clear();
+      boxes().forEach(cb => { cb.checked = false; });
+      sync();
+      onChange();
+    });
   }
 
   async function init() {
     const authUser = await requireUser();
     if (!authUser) return;
     startParticles();
-    setupPlaylistSearch();
+    const refilter = setupPlaylistSearch();
+    setupCategoryFilter(refilter);
     await initDB();
     await loadPlaylists();
     setupCardClicks();
