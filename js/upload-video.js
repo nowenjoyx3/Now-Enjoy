@@ -82,27 +82,10 @@ tailwind.config = {
     animate();
   }
 
-  const DB_NAME = 'NowEnjoyMediaDB';
-  const DB_VERSION = 1;
-  let db;
-
-  const initDB = () => new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('users')) d.createObjectStore('users', { keyPath: 'username' });
-      if (!d.objectStoreNames.contains('playlists')) d.createObjectStore('playlists', { keyPath: 'id' });
-      if (!d.objectStoreNames.contains('videos')) d.createObjectStore('videos', { keyPath: 'id' });
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = () => reject(req.error);
-  });
-
-  const dbGetAll = store => new Promise((resolve, reject) => {
-    const r = db.transaction(store, 'readonly').objectStore(store).getAll();
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
+  // Data now lives in Supabase (details) and Cloudflare R2 (files). See js/supabase-client.js.
+  const Data = window.NowEnjoyData;
+  const initDB = async () => {};
+  const dbGetAll = store => (store === 'videos' ? Data.listVideos() : Data.listPlaylists());
 
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -110,13 +93,6 @@ tailwind.config = {
 
   // Admin-only page: the role is checked against Supabase (profiles.is_admin).
   const requireUser = () => NowEnjoyAuth.requireAdmin();
-
-  const dbPut = (store, item) => new Promise((resolve, reject) => {
-    const tx = db.transaction(store, 'readwrite');
-    tx.objectStore(store).put(item);
-    tx.oncomplete = () => resolve(item);
-    tx.onerror = () => reject(tx.error);
-  });
 
   const setText = (id, value) => { if ($(id)) $(id).textContent = value; };
 
@@ -160,7 +136,7 @@ tailwind.config = {
     vf.onchange = e => {
       tempVideo = e.target.files?.[0] || null;
       if (tempVideo && tempVideo.size > 250 * 1024 * 1024) {
-        alert('Please choose a video smaller than 250 MB for this browser demo.');
+        alert('Please choose a video smaller than 250 MB.');
         tempVideo = null;
         vf.value = '';
       }
@@ -173,10 +149,13 @@ tailwind.config = {
 
     $('formUploadVideo').onsubmit = async e => {
       e.preventDefault();
+      const form = e.target;
+      const button = form.querySelector('button[type="submit"]');
       const title = $('videoTitleInput').value.trim();
       const playlistId = $('videoPlaylistSelect').value;
       const category = $('videoCategorySelect').value;
-      if (!title || !tempThumb || !tempVideo) {
+      const thumbFile = $('videoThumbInput').files && $('videoThumbInput').files[0];
+      if (!title || !thumbFile || !tempVideo) {
         setText('uploadStatus', 'Thumbnail, video file, and title are required.');
         return;
       }
@@ -184,29 +163,33 @@ tailwind.config = {
         setText('uploadStatus', 'Please select a category.');
         return;
       }
+      button.disabled = true;
       try {
-        await dbPut('videos', {
+        setText('uploadStatus', 'Uploading thumbnail...');
+        const thumbKey = await Data.uploadFile(thumbFile, 'thumbs');
+        setText('uploadStatus', 'Uploading video... 0%');
+        const videoKey = await Data.uploadFile(tempVideo, 'videos', pct => setText('uploadStatus', 'Uploading video... ' + pct + '%'));
+        setText('uploadStatus', 'Saving details...');
+        await Data.createVideo({
           id: 'vid_' + crypto.randomUUID(),
           title,
-          thumbnail: tempThumb,
-          videoBlob: tempVideo,
-          views: 0,
-          likes: 0,
-          dislikes: 0,
-          playlistId: playlistId || null,
+          thumb_key: thumbKey,
+          video_key: videoKey,
+          playlist_id: playlistId || null,
           category,
-          uploadedAt: new Date().toISOString(),
-          uploadedBy: (authUser.profile && authUser.profile.username) || authUser.user.email
+          uploaded_by: (authUser.profile && authUser.profile.username) || authUser.user.email
         });
         setText('uploadStatus', 'Video uploaded successfully!');
-        e.target.reset();
+        form.reset();
         tempThumb = '';
         tempVideo = null;
         hide('videoThumbPreview');
-        setTimeout(() => { location.href = 'home.html'; }, 500);
+        setTimeout(() => { location.href = 'home.html'; }, 600);
       } catch (err) {
-        setText('uploadStatus', 'Video could not be saved. Browser storage may be full. Try a smaller video.');
         console.error(err);
+        setText('uploadStatus', 'Upload failed: ' + ((err && err.message) || 'please try again.'));
+      } finally {
+        button.disabled = false;
       }
     };
   }
@@ -215,7 +198,7 @@ tailwind.config = {
     console.error(err);
     const s = await NowEnjoyAuth.getSession();
     if (!s) location.replace('index.html');
-    else alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
+    else alert('Could not load your data. Please refresh the page and try again.');
   }));
 
 })();
