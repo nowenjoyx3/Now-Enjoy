@@ -31,6 +31,11 @@ export async function onRequest({ request, env }) {
       return json({ uploadId: up.uploadId });
     }
 
+    if (action === 'discard' && is('POST')) {
+      await env.MEDIA.delete(key);
+      return json({ ok: true });
+    }
+
     const uploadId = q.get('uploadId') || '';
     if (!uploadId) return json({ error: 'Missing uploadId.' }, 400);
     const up = env.MEDIA.resumeMultipartUpload(key, uploadId);
