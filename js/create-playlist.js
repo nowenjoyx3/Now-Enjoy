@@ -76,7 +76,7 @@
         coverKey = await Data.uploadFile(coverFile, 'covers');
         setText('createStatus', 'Saving playlist...');
         await Data.createPlaylist({
-          id: 'pl_' + crypto.randomUUID(),
+          id: crypto.randomUUID(),
           title,
           cover_key: coverKey,
           created_by: (authUser.profile && authUser.profile.username) || authUser.user.email
