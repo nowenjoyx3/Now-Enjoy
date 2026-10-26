@@ -82,27 +82,10 @@ tailwind.config = {
     animate();
   }
 
-  const DB_NAME = 'NowEnjoyMediaDB';
-  const DB_VERSION = 1;
-  let db;
-
-  const initDB = () => new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('users')) d.createObjectStore('users', { keyPath: 'username' });
-      if (!d.objectStoreNames.contains('playlists')) d.createObjectStore('playlists', { keyPath: 'id' });
-      if (!d.objectStoreNames.contains('videos')) d.createObjectStore('videos', { keyPath: 'id' });
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = () => reject(req.error);
-  });
-
-  const dbGetAll = store => new Promise((resolve, reject) => {
-    const r = db.transaction(store, 'readonly').objectStore(store).getAll();
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
+  // Data now lives in Supabase (details) and Cloudflare R2 (files). See js/supabase-client.js.
+  const Data = window.NowEnjoyData;
+  const initDB = async () => {};
+  const dbGetAll = store => (store === 'videos' ? Data.listVideos() : Data.listPlaylists());
 
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -110,13 +93,6 @@ tailwind.config = {
 
   // Admin-only page: the role is checked against Supabase (profiles.is_admin).
   const requireUser = () => NowEnjoyAuth.requireAdmin();
-
-  const dbPut = (store, item) => new Promise((resolve, reject) => {
-    const tx = db.transaction(store, 'readwrite');
-    tx.objectStore(store).put(item);
-    tx.oncomplete = () => resolve(item);
-    tx.onerror = () => reject(tx.error);
-  });
 
   const setText = (id, value) => { if ($(id)) $(id).textContent = value; };
 
@@ -157,27 +133,35 @@ tailwind.config = {
 
     $('formCreatePlaylist').onsubmit = async e => {
       e.preventDefault();
+      const form = e.target;
+      const button = form.querySelector('button[type="submit"]');
       const title = $('playlistTitleInput').value.trim();
-      if (!title || !tempCover) {
+      const coverFile = $('playlistCoverInput').files && $('playlistCoverInput').files[0];
+      if (!title || !coverFile) {
         setText('createStatus', 'Please provide a cover image and playlist title.');
         return;
       }
+      button.disabled = true;
       try {
-        await dbPut('playlists', {
+        setText('createStatus', 'Uploading cover...');
+        const coverKey = await Data.uploadFile(coverFile, 'covers');
+        setText('createStatus', 'Saving playlist...');
+        await Data.createPlaylist({
           id: 'pl_' + crypto.randomUUID(),
           title,
-          cover: tempCover,
-          createdAt: new Date().toISOString(),
-          createdBy: (authUser.profile && authUser.profile.username) || authUser.user.email
+          cover_key: coverKey,
+          created_by: (authUser.profile && authUser.profile.username) || authUser.user.email
         });
         setText('createStatus', 'Playlist created successfully!');
-        e.target.reset();
+        form.reset();
         tempCover = '';
         hide('playlistCoverPreview');
-        setTimeout(() => { location.href = 'playlists.html'; }, 500);
+        setTimeout(() => { location.href = 'playlists.html'; }, 600);
       } catch (err) {
-        setText('createStatus', 'Could not create playlist. Storage may be full.');
         console.error(err);
+        setText('createStatus', 'Could not create playlist: ' + ((err && err.message) || 'please try again.'));
+      } finally {
+        button.disabled = false;
       }
     };
   }
@@ -186,7 +170,7 @@ tailwind.config = {
     console.error(err);
     const s = await NowEnjoyAuth.getSession();
     if (!s) location.replace('index.html');
-    else alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
+    else alert('Could not load your data. Please refresh the page and try again.');
   }));
 
 })();
