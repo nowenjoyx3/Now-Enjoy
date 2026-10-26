@@ -143,3 +143,149 @@
   };
 })();
 
+
+/* NOW ENJOY - data layer: details in Supabase, files in Cloudflare R2 (through /api functions). */
+(() => {
+  'use strict';
+
+  const auth = window.NowEnjoyAuth;
+  const sb = auth && auth.client;
+  const CHUNK = 8 * 1024 * 1024; // 8 MB per upload request
+  const EXT = {
+    'video/mp4': 'mp4', 'video/webm': 'webm',
+    'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif'
+  };
+
+  async function token() {
+    const s = await auth.getSession();
+    if (!s) { location.replace('index.html'); throw new Error('Please login again.'); }
+    return s.access_token;
+  }
+
+  const mediaUrl = (key, t) => (key ? '/api/media/' + key + '?t=' + encodeURIComponent(t) : '');
+
+  async function check(res) {
+    if (res.ok) return res;
+    let msg = 'Request failed (' + res.status + ').';
+    try { const j = await res.json(); if (j && j.error) msg = j.error; } catch (_) {}
+    throw new Error(msg);
+  }
+
+  const mapVideo = (r, t) => ({
+    id: r.id, title: r.title,
+    thumbnail: mediaUrl(r.thumb_key, t), videoUrl: mediaUrl(r.video_key, t),
+    playlistId: r.playlist_id,
+    category: r.category,
+    views: r.views, likes: r.likes, dislikes: r.dislikes,
+    uploadedBy: r.uploaded_by, uploadedAt: r.created_at
+  });
+
+  const mapPlaylist = (r, t) => ({
+    id: r.id, title: r.title, cover: mediaUrl(r.cover_key, t),
+    createdBy: r.created_by, createdAt: r.created_at
+  });
+
+  async function listVideos() {
+    const t = await token();
+    const { data, error } = await sb.from('videos').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map(r => mapVideo(r, t));
+  }
+
+  async function listPlaylists() {
+    const t = await token();
+    const { data, error } = await sb.from('playlists').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map(r => mapPlaylist(r, t));
+  }
+
+  async function createVideo(row) {
+    const { error } = await sb.from('videos').insert(row);
+    if (error) throw error;
+  }
+
+  async function createPlaylist(row) {
+    const { error } = await sb.from('playlists').insert(row);
+    if (error) throw error;
+  }
+
+  async function addView(id) {
+    const { data, error } = await sb.rpc('increment_views', { p_video: id });
+    if (error) throw error;
+    return data;
+  }
+
+  async function myReaction(id) {
+    const { data, error } = await sb.from('video_reactions').select('reaction').eq('video_id', id).maybeSingle();
+    if (error) return null;
+    return data ? data.reaction : null;
+  }
+
+  async function react(id, reaction) {
+    const { data, error } = await sb.rpc('react_video', { p_video: id, p_reaction: reaction });
+    if (error) throw error;
+    return data; // { likes, dislikes, my }
+  }
+
+  // Uploads a file to R2 and returns its key (the file's name inside the bucket).
+  async function uploadFile(file, folder, onProgress) {
+    const ext = EXT[file.type];
+    if (!ext) throw new Error('This file type is not allowed.');
+    const key = folder + '/' + crypto.randomUUID() + '.' + ext;
+
+    const api = async (query, init) => {
+      const t = await token();
+      const headers = Object.assign({ Authorization: 'Bearer ' + t }, (init && init.headers) || {});
+      return fetch('/api/upload?' + new URLSearchParams(query), Object.assign({}, init, { headers }));
+    };
+
+    if (file.size <= CHUNK) {
+      await check(await api({ action: 'put', key }, { method: 'PUT', body: file }));
+      if (onProgress) onProgress(100);
+      return key;
+    }
+
+    const created = await check(await api({ action: 'create', key }, { method: 'POST' }));
+    const { uploadId } = await created.json();
+    const parts = [];
+    try {
+      const total = Math.ceil(file.size / CHUNK);
+      for (let i = 0; i < total; i++) {
+        const body = file.slice(i * CHUNK, (i + 1) * CHUNK);
+        let res, tries = 0;
+        for (;;) {
+          try {
+            res = await check(await api({ action: 'part', key, uploadId, n: i + 1 }, { method: 'PUT', body }));
+            break;
+          } catch (err) {
+            if (++tries >= 3) throw err;
+          }
+        }
+        parts.push(await res.json());
+        if (onProgress) onProgress(Math.round(((i + 1) / total) * 100));
+      }
+      await check(await api({ action: 'complete', key, uploadId }, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parts })
+      }));
+    } catch (err) {
+      try { await api({ action: 'abort', key, uploadId }, { method: 'POST' }); } catch (_) {}
+      throw err;
+    }
+    return key;
+  }
+
+  // Deletes the row and the R2 files (admin only, checked on the server).
+  async function remove(table, id) {
+    const t = await token();
+    await check(await fetch('/api/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+      body: JSON.stringify({ table, id })
+    }));
+  }
+
+  window.NowEnjoyData = {
+    listVideos, listPlaylists, createVideo, createPlaylist,
+    addView, myReaction, react, uploadFile, remove
+  };
+})();
