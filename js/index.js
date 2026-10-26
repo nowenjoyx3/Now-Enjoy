@@ -1,27 +1,4 @@
 /* NOW ENJOY - index page script */
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: {
-        gothic: ['Orbitron', 'sans-serif'],
-        cinzel: ['Cinzel', 'serif'],
-        sans: ['Outfit', 'sans-serif']
-      },
-      colors: {
-        crimson: {
-          400: '#ff2a55',
-          500: '#ff0033',
-          600: '#cc0028',
-          800: '#800014',
-          900: '#4a000b'
-        },
-        obsidian: '#050307',
-        darkcard: '#0d070f'
-      }
-    }
-  }
-};
-
 (() => {
   'use strict';
 
@@ -30,57 +7,7 @@ tailwind.config = {
     ? document.addEventListener('DOMContentLoaded', fn)
     : fn();
 
-  function startParticles() {
-    const canvas = $('particles-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-
-    class Particle {
-      constructor() { this.reset(); }
-      reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = canvas.height + Math.random() * 100;
-        this.size = Math.random() * 2.2 + 0.6;
-        this.speedY = Math.random() * 1.2 + 0.4;
-        this.speedX = (Math.random() - 0.5) * 0.6;
-        this.opacity = Math.random() * 0.8 + 0.2;
-      }
-      update() {
-        this.y -= this.speedY;
-        this.x += this.speedX;
-        if (this.y < -10) this.reset();
-      }
-      draw() {
-        ctx.fillStyle = `rgba(255,0,51,${this.opacity})`;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = '#ff0033';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-    }
-
-    function resize() {
-      canvas.width = innerWidth;
-      canvas.height = innerHeight;
-      particles = Array.from(
-        { length: Math.min(Math.floor(innerWidth / 18), 70) },
-        () => new Particle()
-      );
-    }
-
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => { p.update(); p.draw(); });
-      requestAnimationFrame(animate);
-    }
-
-    addEventListener('resize', resize);
-    resize();
-    animate();
-  }
+  const { startParticles } = window.NowEnjoyUI;
 
   const auth = window.NowEnjoyAuth || {
     ready: false,
