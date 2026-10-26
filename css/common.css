@@ -1,0 +1,99 @@
+/* NOW ENJOY - shared styles (loaded on every page after the page's own css) */
+
+/* Dark vignette over the particles (Tailwind v3 has no bg-radial class) */
+.bg-radial {
+  background: radial-gradient(ellipse at center, rgba(5,3,7,0) 0%, rgba(5,3,7,.8) 55%, #050307 100%);
+}
+
+/* ---- Age verification popup ---- */
+#ageVerification {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 0, 5, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.age-box {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 24px;
+  text-align: center;
+  background: #0d070f;
+  border: 1px solid #ff0033;
+  border-radius: 18px;
+  box-shadow: 0 0 25px rgba(255, 0, 51, 0.2), inset 0 0 20px rgba(255, 0, 51, 0.04);
+  animation: agePopupIn 0.35s ease-out;
+}
+
+.age-icon {
+  color: #ff0033;
+  font-size: 42px;
+  margin-bottom: 18px;
+  filter: drop-shadow(0 0 10px rgba(255, 0, 51, 0.5));
+}
+
+.age-title {
+  color: #fff;
+  font-family: 'Cinzel', serif;
+  font-size: 25px;
+  font-weight: 900;
+  margin-bottom: 14px;
+}
+
+.age-message {
+  color: #c9c2cc;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 25px;
+}
+
+.age-buttons { display: flex; flex-direction: column; gap: 12px; }
+
+.age-btn {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 9px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.age-yes { color: #fff; background: #cc0028; border: 1px solid #ff2a55; }
+.age-yes:hover { background: #ff0033; box-shadow: 0 0 18px rgba(255,0,51,.35); transform: translateY(-1px); }
+.age-no { color: #d5cbd5; background: transparent; border: 1px solid #51404c; }
+.age-no:hover { color: #fff; background: #24101b; border-color: #ff0033; }
+.age-note { color: #746875; font-family: 'Outfit', sans-serif; font-size: 11px; margin-top: 20px; }
+
+@keyframes agePopupIn {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+body.age-locked { overflow: hidden; }
+
+/* ---- X button on the login / create-account cards (continue as guest) ---- */
+.card-close {
+  position: absolute;
+  top: .7rem;
+  right: .7rem;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: #9ca3af;
+  background: #0d070f;
+  border: 1px solid #4a000b;
+  transition: .2s;
+}
+
+.card-close:hover { color: #fff; border-color: #ff0033; box-shadow: 0 0 12px #ff003380; }
