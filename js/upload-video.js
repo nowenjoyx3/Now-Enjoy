@@ -101,6 +101,7 @@
         setText('uploadStatus', 'Saving details...');
         await Data.createVideo({
           id: crypto.randomUUID(),
+          owner_id: authUser.user.id,
           title,
           thumb_key: thumbKey,
           video_key: videoKey,
