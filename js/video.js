@@ -82,27 +82,10 @@ tailwind.config = {
     animate();
   }
 
-  const DB_NAME = 'NowEnjoyMediaDB';
-  const DB_VERSION = 1;
-  let db;
-
-  const initDB = () => new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('users')) d.createObjectStore('users', { keyPath: 'username' });
-      if (!d.objectStoreNames.contains('playlists')) d.createObjectStore('playlists', { keyPath: 'id' });
-      if (!d.objectStoreNames.contains('videos')) d.createObjectStore('videos', { keyPath: 'id' });
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = () => reject(req.error);
-  });
-
-  const dbGetAll = store => new Promise((resolve, reject) => {
-    const r = db.transaction(store, 'readonly').objectStore(store).getAll();
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
+  // Data now lives in Supabase (details) and Cloudflare R2 (files). See js/supabase-client.js.
+  const Data = window.NowEnjoyData;
+  const initDB = async () => {};
+  const dbGetAll = store => (store === 'videos' ? Data.listVideos() : Data.listPlaylists());
 
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -110,13 +93,6 @@ tailwind.config = {
 
   // Login is handled by Supabase Auth (see js/supabase-client.js).
   const requireUser = () => NowEnjoyAuth.requireUser();
-
-  const dbPut = (store, item) => new Promise((resolve, reject) => {
-    const tx = db.transaction(store, 'readwrite');
-    tx.objectStore(store).put(item);
-    tx.oncomplete = () => resolve(item);
-    tx.onerror = () => reject(tx.error);
-  });
 
   const setText = (id, value) => { if ($(id)) $(id).textContent = value; };
 
@@ -141,8 +117,7 @@ tailwind.config = {
 
 
   let currentVideo = null;
-  let activeVideoUrl = '';
-  let currentReaction = null; // 'like' | 'dislike' | null (this visit only)
+  let currentReaction = null; // 'like' | 'dislike' | null
 
   function renderReaction() {
     setText('playerLikesCount', Number(currentVideo.likes) || 0);
@@ -153,41 +128,40 @@ tailwind.config = {
     $('btnDislikeVideo').setAttribute('aria-pressed', String(currentReaction === 'dislike'));
   }
 
+  let reacting = false;
   async function react(type) {
-    if (!currentVideo) return;
-    const dec = key => { currentVideo[key] = Math.max(0, (Number(currentVideo[key]) || 0) - 1); };
-    const inc = key => { currentVideo[key] = (Number(currentVideo[key]) || 0) + 1; };
-    const keyOf = t => (t === 'like' ? 'likes' : 'dislikes');
-
-    if (currentReaction === type) {
-      dec(keyOf(type));
-      currentReaction = null;
-    } else {
-      if (currentReaction) dec(keyOf(currentReaction));
-      currentReaction = type;
-      inc(keyOf(type));
+    if (!currentVideo || reacting) return;
+    reacting = true;
+    try {
+      const res = await Data.react(currentVideo.id, currentReaction === type ? 'none' : type);
+      currentVideo.likes = res.likes;
+      currentVideo.dislikes = res.dislikes;
+      currentReaction = res.my || null;
+      renderReaction();
+    } catch (err) {
+      console.error(err);
+      alert('Could not save your reaction. Please try again.');
+    } finally {
+      reacting = false;
     }
-    renderReaction();
-    try { await dbPut('videos', currentVideo); } catch (err) { console.error(err); }
   }
 
   async function initVideoPage() {
     const id = new URLSearchParams(location.search).get('id');
-    const vids = await dbGetAll('videos');
+    const vids = await Data.listVideos();
     currentVideo = vids.find(v => v.id === id);
     if (!currentVideo) { setText('playerVideoTitle', 'Video not found'); return; }
 
-    currentVideo.views = (Number(currentVideo.views) || 0) + 1;
-    await dbPut('videos', currentVideo);
     setText('playerVideoTitle', currentVideo.title);
+    try {
+      const views = await Data.addView(id);
+      currentVideo.views = Number(views) || (Number(currentVideo.views) || 0) + 1;
+    } catch (err) { console.error(err); }
     setText('playerViewsCount', `${currentVideo.views} Views`);
+    currentReaction = await Data.myReaction(id);
     renderReaction();
 
-    if (currentVideo.videoBlob instanceof Blob) {
-      activeVideoUrl = URL.createObjectURL(currentVideo.videoBlob);
-      $('mainVideoElement').src = activeVideoUrl;
-    }
-
+    $('mainVideoElement').src = currentVideo.videoUrl;
     $('relatedVideosContainer').innerHTML =
       vids.filter(v => v.id !== id).slice(0, 4).map(cardVideo).join('');
   }
@@ -203,13 +177,11 @@ tailwind.config = {
     $('btnDislikeVideo').onclick = () => react('dislike');
   }
 
-  addEventListener('beforeunload', () => { if (activeVideoUrl) URL.revokeObjectURL(activeVideoUrl); });
-
   ready(() => init().catch(async err => {
     console.error(err);
     const s = await NowEnjoyAuth.getSession();
     if (!s) location.replace('index.html');
-    else alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
+    else alert('Could not load your data. Please refresh the page and try again.');
   }));
 
 })();
