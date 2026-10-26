@@ -100,7 +100,7 @@
         videoKey = await Data.uploadFile(tempVideo, 'videos', pct => setText('uploadStatus', 'Uploading video... ' + pct + '%'));
         setText('uploadStatus', 'Saving details...');
         await Data.createVideo({
-          id: 'vid_' + crypto.randomUUID(),
+          id: crypto.randomUUID(),
           title,
           thumb_key: thumbKey,
           video_key: videoKey,
