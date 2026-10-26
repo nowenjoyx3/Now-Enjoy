@@ -8,7 +8,7 @@ export async function onRequestPost({ request, env }) {
 
   const body = await request.json().catch(() => ({}));
   const { table, id } = body;
-  if (!['videos', 'playlists'].includes(table) || typeof id !== 'string' || !/^(vid|pl)_[0-9a-f-]{36}$/.test(id)) {
+  if (!['videos', 'playlists'].includes(table) || typeof id !== 'string' || !/^((vid|pl)_)?[0-9a-f-]{36}$/.test(id)) {
     return json({ error: 'Invalid request.' }, 400);
   }
 
