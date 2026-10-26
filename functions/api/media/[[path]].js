@@ -1,5 +1,4 @@
-// Serves files from the PRIVATE R2 bucket, only to logged-in users. Supports seeking in videos (Range requests).
-import { bearer, getUser } from '../../_lib/auth.js';
+// Serves files from the R2 bucket to everyone (guests included). Supports seeking in videos (Range requests).
 
 const KEY_RE = /^(videos|thumbs|covers)\/[0-9a-f-]{36}\.(mp4|webm|png|jpg|webp|gif)$/;
 
@@ -8,9 +7,6 @@ export async function onRequestGet({ request, env, params }) {
   const key = Array.isArray(params.path) ? params.path.join('/') : String(params.path || '');
   if (!KEY_RE.test(key)) return new Response('Not found', { status: 404 });
 
-  const user = await getUser(env, bearer(request, true));
-  if (!user) return new Response('Login required', { status: 401 });
-
   const obj = await env.MEDIA.get(key, { range: request.headers });
   if (!obj) return new Response('Not found', { status: 404 });
 
@@ -18,7 +14,7 @@ export async function onRequestGet({ request, env, params }) {
   obj.writeHttpMetadata(headers);
   headers.set('etag', obj.httpEtag);
   headers.set('accept-ranges', 'bytes');
-  headers.set('cache-control', 'private, max-age=3600');
+  headers.set('cache-control', 'public, max-age=3600');
   headers.set('x-content-type-options', 'nosniff');
 
   let status = 200;
