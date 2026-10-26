@@ -82,27 +82,10 @@ tailwind.config = {
     animate();
   }
 
-  const DB_NAME = 'NowEnjoyMediaDB';
-  const DB_VERSION = 1;
-  let db;
-
-  const initDB = () => new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('users')) d.createObjectStore('users', { keyPath: 'username' });
-      if (!d.objectStoreNames.contains('playlists')) d.createObjectStore('playlists', { keyPath: 'id' });
-      if (!d.objectStoreNames.contains('videos')) d.createObjectStore('videos', { keyPath: 'id' });
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = () => reject(req.error);
-  });
-
-  const dbGetAll = store => new Promise((resolve, reject) => {
-    const r = db.transaction(store, 'readonly').objectStore(store).getAll();
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
+  // Data now lives in Supabase (details) and Cloudflare R2 (files). See js/supabase-client.js.
+  const Data = window.NowEnjoyData;
+  const initDB = async () => {};
+  const dbGetAll = store => (store === 'videos' ? Data.listVideos() : Data.listPlaylists());
 
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -229,7 +212,7 @@ tailwind.config = {
     console.error(err);
     const s = await NowEnjoyAuth.getSession();
     if (!s) location.replace('index.html');
-    else alert('Could not initialize browser storage. Please use a modern browser with IndexedDB enabled.');
+    else alert('Could not load your data. Please refresh the page and try again.');
   }));
 
 })();
