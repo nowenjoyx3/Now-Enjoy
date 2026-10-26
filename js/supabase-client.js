@@ -56,6 +56,13 @@
     return session.user;
   }
 
+  // Pages that guests may open call this. Returns the user, or null (no redirect).
+  async function optionalUser() {
+    const session = await getSession();
+    if (session) watchSignOut();
+    return session ? session.user : null;
+  }
+
   async function getProfile(userId) {
     if (!client) return null;
     let id = userId;
@@ -135,6 +142,7 @@
     client,
     getSession,
     requireUser,
+    optionalUser,
     requireAdmin,
     getProfile,
     isAdmin,
@@ -162,7 +170,8 @@
     return s.access_token;
   }
 
-  const mediaUrl = (key, t) => (key ? '/api/media/' + key + '?t=' + encodeURIComponent(t) : '');
+  // Media files are public: no login token in the URL any more.
+  const mediaUrl = key => (key ? '/api/media/' + key : '');
 
   async function check(res) {
     if (res.ok) return res;
@@ -186,14 +195,14 @@
   });
 
   async function listVideos() {
-    const t = await token();
+    const t = null; // guests may read too
     const { data, error } = await sb.from('videos').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data.map(r => mapVideo(r, t));
   }
 
   async function listPlaylists() {
-    const t = await token();
+    const t = null; // guests may read too
     const { data, error } = await sb.from('playlists').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data.map(r => mapPlaylist(r, t));
@@ -274,6 +283,24 @@
     return key;
   }
 
+  // Removes a file that was uploaded but never saved in the database (admin only, checked on the server).
+  async function discardFile(key) {
+    try {
+      const t = await token();
+      await fetch('/api/upload?' + new URLSearchParams({ action: 'discard', key }), {
+        method: 'POST', headers: { Authorization: 'Bearer ' + t }, keepalive: true
+      });
+    } catch (_) {}
+  }
+
+  // Asks the server to delete R2 files that no video / playlist uses (admin only, runs quietly).
+  async function cleanup() {
+    try {
+      const t = await token();
+      await fetch('/api/cleanup', { method: 'POST', headers: { Authorization: 'Bearer ' + t } });
+    } catch (_) {}
+  }
+
   // Deletes the row and the R2 files (admin only, checked on the server).
   async function remove(table, id) {
     const t = await token();
@@ -286,6 +313,6 @@
 
   window.NowEnjoyData = {
     listVideos, listPlaylists, createVideo, createPlaylist,
-    addView, myReaction, react, uploadFile, remove
+    addView, myReaction, react, uploadFile, discardFile, cleanup, remove
   };
 })();
