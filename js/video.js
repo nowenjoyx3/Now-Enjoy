@@ -42,6 +42,23 @@
   }
 
 
+  // Custom player (Plyr): play, +-10s, progress, time, volume, speed, loop, picture-in-picture, fullscreen.
+  // There is NO download button, and the browser's own download / right-click menu is switched off.
+  function setupPlayer(video) {
+    video.addEventListener('contextmenu', e => e.preventDefault());
+    if (typeof Plyr !== 'function') return; // library not loaded: the normal browser player still works
+    const player = new Plyr(video, {
+      controls: ['play-large', 'rewind', 'play', 'fast-forward', 'progress', 'current-time', 'duration',
+                 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
+      settings: ['speed', 'loop'],
+      speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+      seekTime: 10,
+      keyboard: { focused: true, global: true },
+      tooltips: { controls: true, seek: true }
+    });
+    player.elements.container.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
   let currentVideo = null;
   let currentReaction = null; // 'like' | 'dislike' | null
   let isLoggedIn = false;
@@ -89,7 +106,9 @@
     currentReaction = isLoggedIn ? await Data.myReaction(id) : null;
     renderReaction();
 
-    $('mainVideoElement').src = currentVideo.videoUrl;
+    const videoEl = $('mainVideoElement');
+    videoEl.src = currentVideo.videoUrl;
+    setupPlayer(videoEl);
     $('relatedVideosContainer').innerHTML =
       vids.filter(v => v.id !== id)
         .map(v => [v, (v.playlistId && v.playlistId === currentVideo.playlistId ? 2 : 0) + (v.category && v.category === currentVideo.category ? 1 : 0)])
