@@ -15,6 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/common.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.polyfilled.min.js"></script>
     <script src="js/video.js"></script>
 
     <link
@@ -30,6 +31,7 @@
         rel="stylesheet"
     >
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.css">
     <link rel="stylesheet" href="css/video.css">
     <link rel="stylesheet" href="css/common.css">
 
@@ -101,8 +103,10 @@
                 <video
                     id="mainVideoElement"
                     controls
-                    controlsList="nodownload"
-                    class="w-full max-h-[600px] object-contain"
+                    controlsList="nodownload noremoteplayback"
+                    playsinline
+                    preload="metadata"
+                    class="w-full"
                 >
                     Your browser does not support video playback.
                 </video>
