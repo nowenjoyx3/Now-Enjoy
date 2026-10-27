@@ -59,6 +59,33 @@
     player.elements.container.addEventListener('contextmenu', e => e.preventDefault());
   }
 
+  // "Playlist" bar under the views: shows the playlist name and all its videos (newest first).
+  async function renderPlaylistPanel(vids) {
+    const pid = currentVideo.playlistId;
+    if (!pid) return;
+    let title = 'Playlist';
+    try {
+      const pls = await Data.listPlaylists();
+      const p = pls.find(x => x.id === pid);
+      if (p) title = p.title;
+    } catch (err) { console.error(err); }
+
+    const list = vids.filter(v => v.playlistId === pid);
+    $('playlistName').textContent = title;
+    $('playlistItems').innerHTML = list.map(v => {
+      const now = v.id === currentVideo.id;
+      return `<a class="playlist-item${now ? ' current' : ''}" href="video.html?id=${encodeURIComponent(v.id)}"${now ? ' aria-current="true"' : ''}><img src="${esc(v.thumbnail)}" alt=""><span class="pi-title">${esc(v.title)}</span>${now ? '<span class="pi-now">NOW PLAYING</span>' : ''}</a>`;
+    }).join('');
+    $('playlistPanel').classList.remove('hidden');
+
+    const toggle = $('playlistToggle'), body = $('playlistBody');
+    toggle.onclick = () => {
+      const open = body.classList.toggle('hidden') === false;
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.classList.toggle('open', open);
+    };
+  }
+
   let currentVideo = null;
   let currentReaction = null; // 'like' | 'dislike' | null
   let isLoggedIn = false;
@@ -116,6 +143,7 @@
         .slice(0, 4)
         .map(x => cardVideo(x[0]))
         .join('');
+    await renderPlaylistPanel(vids);
   }
 
   async function init() {
