@@ -27,6 +27,14 @@ async function serve({ request, env, params }, withBody) {
   const m = KEY_RE.exec(key);
   if (!m) return new Response('Not found', { status: 404 });
 
+  // Makes casual downloading harder: the link cannot be opened directly in a tab,
+  // and other websites cannot embed the file. (Video / image tags on this site work normally.)
+  const site = request.headers.get('sec-fetch-site');
+  const dest = request.headers.get('sec-fetch-dest');
+  if (site === 'cross-site' || ['document', 'iframe', 'frame', 'embed', 'object'].includes(dest)) {
+    return new Response('Forbidden', { status: 403, headers: { 'cache-control': 'no-store' } });
+  }
+
   const head = await env.MEDIA.head(key);
   if (!head) return new Response('Not found', { status: 404 });
   const size = head.size;
