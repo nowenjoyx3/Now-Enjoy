@@ -227,3 +227,24 @@ to{background-position:200% 0}
   border-color: #ff2a55;
   box-shadow: 0 0 12px rgba(255, 0, 51, 0.35);
 }
+
+/* ---- Custom player (Plyr) in the site colours ---- */
+.plyr {
+  --plyr-color-main: #ff0033;
+  --plyr-video-background: #000;
+  --plyr-font-family: 'Outfit', sans-serif;
+  --plyr-menu-background: #0d070f;
+  --plyr-menu-color: #e2e8f0;
+  --plyr-tooltip-background: #0d070f;
+  --plyr-tooltip-color: #fff;
+  border-radius: 1rem;
+}
+
+.plyr--video .plyr__control--overlaid {
+  background: #cc0028;
+  box-shadow: 0 0 20px #ff003399;
+}
+
+.plyr--video .plyr__control--overlaid:hover {
+  background: #ff0033;
+}
