@@ -63,8 +63,8 @@
     const vf = $('videoFileInput');
     vf.onchange = e => {
       tempVideo = e.target.files?.[0] || null;
-      if (tempVideo && tempVideo.size > 250 * 1024 * 1024) {
-        alert('Please choose a video smaller than 250 MB.');
+      if (tempVideo && tempVideo.size > 1024 * 1024 * 1024) {
+        alert('Please choose a video smaller than 1 GB.');
         tempVideo = null;
         vf.value = '';
       }
