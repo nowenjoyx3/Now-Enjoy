@@ -1,8 +1,9 @@
 // Admin-only upload into R2. Big files arrive in 8 MB chunks (multipart), so the 100 MB request limit is not a problem.
 import { json, requireAdmin } from '../_lib/auth.js';
 
-const TYPE_BY_EXT = { mp4: 'video/mp4', webm: 'video/webm', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' };
-const KEY_RE = /^(videos|thumbs|covers)\/[0-9a-f-]{36}\.(mp4|webm|png|jpg|webp|gif)$/;
+const TYPE_BY_EXT = { mp4: 'video/mp4', webm: 'video/webm', mp3: 'audio/mpeg', m4a: 'audio/mp4', ogg: 'audio/ogg', wav: 'audio/wav', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' };
+const KEY_RE = /^(videos|thumbs|covers|audios)\/[0-9a-f-]{36}\.(mp4|webm|mp3|m4a|ogg|wav|png|jpg|webp|gif)$/;
+const WANT = { videos: 'video/', audios: 'audio/', thumbs: 'image/', covers: 'image/' };
 const MAX_BODY = 16 * 1024 * 1024;
 
 export async function onRequest({ request, env }) {
@@ -16,7 +17,7 @@ export async function onRequest({ request, env }) {
   const m = KEY_RE.exec(key);
   if (!m) return json({ error: 'Invalid file name.' }, 400);
   const type = TYPE_BY_EXT[m[2]];
-  if ((m[1] === 'videos') !== type.startsWith('video/')) return json({ error: 'File type does not match its folder.' }, 400);
+  if (!type.startsWith(WANT[m[1]])) return json({ error: 'File type does not match its folder.' }, 400);
   const is = method => request.method === method;
   const bodyLen = Number(request.headers.get('content-length') || 0);
 
