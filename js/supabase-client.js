@@ -213,6 +213,19 @@
     if (error) throw error;
   }
 
+  // Dub / extra audio tracks of a video: [{ id, name, url }]
+  async function listAudios(videoId) {
+    const { data, error } = await sb.from('video_audios').select('id,name,audio_key').eq('video_id', videoId).order('created_at', { ascending: true });
+    if (error) throw error;
+    return data.map(r => ({ id: r.id, name: r.name, url: mediaUrl(r.audio_key) }));
+  }
+
+  async function createAudios(rows) {
+    if (!rows.length) return;
+    const { error } = await sb.from('video_audios').insert(rows);
+    if (error) throw error;
+  }
+
   async function createPlaylist(row) {
     const { error } = await sb.from('playlists').insert(row);
     if (error) throw error;
@@ -238,7 +251,11 @@
 
   // Uploads a file to R2 and returns its key (the file's name inside the bucket).
   async function uploadFile(file, folder, onProgress) {
-    const ext = EXT[file.type];
+    let ext = EXT[file.type];
+    if (folder === 'audios') {
+      const n = ((file.name || '').split('.').pop() || '').toLowerCase();
+      ext = ['mp3', 'm4a', 'ogg', 'wav'].includes(n) ? n : null;
+    }
     if (!ext) throw new Error('This file type is not allowed.');
     const key = folder + '/' + crypto.randomUUID() + '.' + ext;
 
@@ -312,7 +329,7 @@
   }
 
   window.NowEnjoyData = {
-    listVideos, listPlaylists, createVideo, createPlaylist,
+    listVideos, listPlaylists, createVideo, createPlaylist, listAudios, createAudios,
     addView, myReaction, react, uploadFile, discardFile, cleanup, remove
   };
 })();
