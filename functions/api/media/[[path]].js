@@ -1,7 +1,7 @@
 // Serves files from the R2 bucket to everyone (guests included).
 // Handles Range requests by hand so videos can start and seek in every browser.
-const KEY_RE = /^(videos|thumbs|covers)\/[0-9a-f-]{36}\.(mp4|webm|png|jpg|webp|gif)$/;
-const TYPES = { mp4: 'video/mp4', webm: 'video/webm', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' };
+const KEY_RE = /^(videos|thumbs|covers|audios)\/[0-9a-f-]{36}\.(mp4|webm|mp3|m4a|ogg|wav|png|jpg|webp|gif)$/;
+const TYPES = { mp4: 'video/mp4', webm: 'video/webm', mp3: 'audio/mpeg', m4a: 'audio/mp4', ogg: 'audio/ogg', wav: 'audio/wav', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' };
 
 // "bytes=0-", "bytes=100-200", "bytes=-500"  ->  { start, end } | null (no range) | false (not satisfiable)
 function parseRange(header, size) {
