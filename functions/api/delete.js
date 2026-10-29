@@ -21,6 +21,13 @@ export async function onRequestPost({ request, env }) {
     const rows = found.ok ? await found.json() : [];
     if (!rows[0]) return json({ error: 'Not found.' }, 404);
 
+    // Dub audios of this video (their rows are removed with the video; the files are removed below).
+    let audioKeys = [];
+    if (table === 'videos') {
+      const a = await fetch(`${url}/rest/v1/video_audios?video_id=eq.${encodeURIComponent(id)}&select=audio_key`, { headers });
+      if (a.ok) audioKeys = (await a.json()).map(r => r.audio_key).filter(Boolean);
+    }
+
     // The database rule (RLS) also checks admin here, so this is a second lock.
     const del = await fetch(`${url}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
       method: 'DELETE',
@@ -29,7 +36,7 @@ export async function onRequestPost({ request, env }) {
     const removed = del.ok ? await del.json() : [];
     if (!removed.length) return json({ error: 'Delete was not allowed.' }, 403);
 
-    const keys = Object.values(rows[0]).filter(Boolean);
+    const keys = Object.values(rows[0]).filter(Boolean).concat(audioKeys);
     if (keys.length) await env.MEDIA.delete(keys);
     return json({ ok: true });
   } catch (err) {
