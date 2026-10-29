@@ -3,7 +3,7 @@
 // because an upload that is still being saved looks the same as a leftover.
 import { cfg, json, requireAdmin } from '../_lib/auth.js';
 
-const PREFIXES = ['videos/', 'thumbs/', 'covers/'];
+const PREFIXES = ['videos/', 'thumbs/', 'covers/', 'audios/'];
 const GRACE_MS = 60 * 60 * 1000;
 
 async function readRows(url, headers, table, columns) {
@@ -31,8 +31,14 @@ export async function onRequestPost({ request, env }) {
     for (const v of await readRows(url, headers, 'videos', 'video_key,thumb_key')) { add(v.video_key); add(v.thumb_key); }
     for (const p of await readRows(url, headers, 'playlists', 'cover_key')) add(p.cover_key);
 
+    // Dub audios: if their table cannot be read, the audios/ folder is skipped (nothing is deleted there).
+    let audiosKnown = true;
+    try { for (const a of await readRows(url, headers, 'video_audios', 'audio_key')) add(a.audio_key); }
+    catch (_) { audiosKnown = false; }
+
     const stale = [];
     for (const prefix of PREFIXES) {
+      if (prefix === 'audios/' && !audiosKnown) continue;
       let cursor;
       do {
         const page = await env.MEDIA.list({ prefix, cursor, limit: 1000 });
