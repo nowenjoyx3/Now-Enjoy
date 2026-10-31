@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Edit Video | NOW ENJOY</title>
+
+    <link rel="icon" href="/logo/Logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="/logo/Logo.png">
+
+    <meta name="description" content="NOW ENJOY - log in or create an account to watch videos and playlists. For adults 18+ only.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050307">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/edit-video.js"></script>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Orbitron:wght@600;800;900&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="css/edit-video.css">
+    <link rel="stylesheet" href="css/common.css">
+</head>
+
+<body class="bg-obsidian min-h-screen flex flex-col relative selection:bg-crimson-600 selection:text-white">
+    <canvas id="particles-canvas" aria-hidden="true"></canvas>
+
+    <div class="fixed inset-0 bg-radial from-transparent via-obsidian/80 to-obsidian pointer-events-none z-0"></div>
+
+    <div class="relative z-10 flex-1 flex flex-col w-full min-h-screen">
+
+        <header class="bg-darkcard/90 border-b border-crimson-900/60 sticky top-0 z-40 backdrop-blur-md px-4 py-3">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+                <a href="home.html" class="flex items-center gap-2" aria-label="NOW ENJOY Home">
+                    <i class="fa-solid fa-crown text-crimson-500 text-2xl animate-pulse"></i>
+                    <span class="font-cinzel text-xl sm:text-2xl font-black text-white tracking-wider">
+                        NOW <span class="shimmer-text">ENJOY</span>
+                    </span>
+                </a>
+
+                <nav class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 text-[10px] sm:text-xs font-gothic">
+                    <a class="nav-btn" href="upload-video.html">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Upload</span>
+                    </a>
+
+                    <a class="nav-btn" href="profile.html">
+                        <i class="fa-solid fa-user-ninja"></i>
+                        <span>Profile</span>
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="flex-1 w-full max-w-3xl mx-auto p-4 sm:p-8">
+
+            <!-- 1) Pick a video -->
+            <section id="viewList" class="gothic-frame aura-glow p-6 sm:p-8">
+                <h1 class="font-cinzel text-2xl font-black text-white mb-2">EDIT VIDEO</h1>
+                <p class="text-xs text-gray-400 mb-4">Choose a video to change its title, playlist, category, thumbnail, video file or audios.</p>
+
+                <input
+                    type="search"
+                    id="listSearch"
+                    placeholder="Search by title..."
+                    class="gothic-input w-full px-3 py-2 rounded-xl mb-4 text-sm"
+                >
+
+                <div id="editVideosList" class="space-y-3"></div>
+
+                <p id="emptyList" class="hidden py-8 text-center text-gray-500 text-sm">Nothing to edit yet.</p>
+            </section>
+
+            <!-- 2) Edit the chosen video -->
+            <section id="viewEdit" class="gothic-frame aura-glow p-6 sm:p-8 hidden">
+                <a href="edit-video.html" class="text-[11px] text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Back to list
+                </a>
+
+                <h1 class="font-cinzel text-2xl font-black text-white mt-3 mb-1">EDIT VIDEO</h1>
+                <p class="text-xs text-gray-400 mb-6">
+                    Only change what you need. Anything you leave as it is stays as it is.
+                    <a id="watchLink" href="#" target="_blank" rel="noopener" class="text-crimson-400 hover:text-white underline ml-1">Open this video</a>
+                </p>
+
+                <form id="formEditVideo" class="space-y-4">
+
+                    <label class="field-label">
+                        VIDEO TITLE *
+                        <input type="text" id="editTitle" maxlength="200" class="gothic-input w-full px-3 py-3 rounded-xl mt-1" required>
+                    </label>
+
+                    <label class="field-label">
+                        PLAYLIST
+                        <select id="editPlaylist" class="gothic-input w-full px-3 py-3 rounded-xl mt-1">
+                            <option value="">-- No Playlist (General Library) --</option>
+                        </select>
+                        <span class="block text-[11px] text-gray-500 mt-1 font-normal" style="font-family:Outfit,sans-serif">
+                            Pick another playlist to move the video, or "No Playlist" to take it out of its playlist (the video itself is not deleted).
+                        </span>
+                    </label>
+
+                    <label class="field-label">
+                        CATEGORY *
+                        <select id="editCategory" class="gothic-input w-full px-3 py-3 rounded-xl mt-1" required>
+                            <option value="">-- Select Category --</option>
+                            <option value="real-life">Real Life (Humans)</option>
+                            <option value="3d">3D</option>
+                            <option value="donghua">Donghua</option>
+                            <option value="anime">Anime</option>
+                            <option value="cartoon">Cartoon</option>
+                        </select>
+                    </label>
+
+                    <div class="edit-box">
+                        <h3>THUMBNAIL</h3>
+                        <div class="preview" id="editThumbCurrent"><img alt="Current thumbnail"></div>
+                        <label class="field-label mt-3">
+                            CHOOSE A NEW THUMBNAIL (OPTIONAL)
+                            <input type="file" id="editThumbInput" accept="image/*" class="gothic-input w-full p-2 rounded-xl mt-1">
+                        </label>
+                        <div id="editThumbPreview" class="preview hidden"><img alt="New thumbnail preview"></div>
+                    </div>
+
+                    <div class="edit-box">
+                        <h3>VIDEO FILE</h3>
+                        <label class="field-label">
+                            REPLACE THE VIDEO FILE (OPTIONAL, MP4 / WEBM, MAX 1 GB)
+                            <input type="file" id="editVideoInput" accept="video/mp4,video/webm" class="gothic-input w-full p-2 rounded-xl mt-1">
+                        </label>
+                        <p class="text-[11px] text-gray-500 mt-1">
+                            The old video file is deleted after the new one is saved. Views and likes stay.
+                            If this video has dub audios, each one must still match the new video's length (within 0.5 second),
+                            otherwise replace or remove that audio too.
+                        </p>
+                    </div>
+
+                    <div class="edit-box">
+                        <h3>DUB / EXTRA AUDIO</h3>
+
+                        <div id="audioExisting" class="space-y-2"></div>
+                        <p id="noAudioNote" class="text-[11px] text-gray-500 hidden">This video has no extra audio yet.</p>
+
+                        <div id="audioNew" class="space-y-2 mt-3"></div>
+
+                        <button type="button" id="btnAddAudio" class="gothic-input w-full px-3 py-2 rounded-xl mt-3 text-xs">+ ADD AUDIO</button>
+
+                        <p class="text-[11px] text-gray-500 mt-1">
+                            You can rename an audio, replace its file, or remove it. Every audio must be the same length as the video (within 0.5 second).
+                            MP3, M4A, OGG or WAV. Up to 8 audios in total.
+                        </p>
+                    </div>
+
+                    <button type="submit" id="btnSave" class="btn-crimson w-full py-3 rounded-xl">SAVE CHANGES</button>
+
+                    <p id="editStatus" class="status-line"></p>
+                </form>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="relative z-10 py-3 text-center text-[11px] text-gray-500 border-t border-crimson-900/30 bg-obsidian/90">
+        &copy; NOW ENJOY : "This website is strictly for adults (18+) only"
+    </footer>
+</body>
+</html>
