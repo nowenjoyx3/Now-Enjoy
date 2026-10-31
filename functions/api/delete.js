@@ -8,13 +8,13 @@ export async function onRequestPost({ request, env }) {
 
   const body = await request.json().catch(() => ({}));
   const { table, id } = body;
-  if (!['videos', 'playlists'].includes(table) || typeof id !== 'string' || !/^((vid|pl)_)?[0-9a-f-]{36}$/.test(id)) {
+  if (!['videos', 'playlists', 'video_audios'].includes(table) || typeof id !== 'string' || !/^((vid|pl)_)?[0-9a-f-]{36}$/.test(id)) {
     return json({ error: 'Invalid request.' }, 400);
   }
 
   const { url, key } = cfg(env);
   const headers = { apikey: key, Authorization: `Bearer ${gate.token}` };
-  const columns = table === 'videos' ? 'video_key,thumb_key' : 'cover_key';
+  const columns = { videos: 'video_key,thumb_key', playlists: 'cover_key', video_audios: 'audio_key' }[table];
 
   try {
     const found = await fetch(`${url}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=${columns}`, { headers });
