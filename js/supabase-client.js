@@ -183,14 +183,14 @@
   const mapVideo = (r, t) => ({
     id: r.id, title: r.title,
     thumbnail: mediaUrl(r.thumb_key, t), videoUrl: mediaUrl(r.video_key, t),
-    playlistId: r.playlist_id,
+    playlistId: r.playlist_id, thumbKey: r.thumb_key, videoKey: r.video_key,
     category: r.category,
     views: r.views, likes: r.likes, dislikes: r.dislikes,
     uploadedBy: r.uploaded_by, uploadedAt: r.created_at
   });
 
   const mapPlaylist = (r, t) => ({
-    id: r.id, title: r.title, cover: mediaUrl(r.cover_key, t),
+    id: r.id, title: r.title, cover: mediaUrl(r.cover_key, t), coverKey: r.cover_key,
     createdBy: r.created_by, createdAt: r.created_at
   });
 
@@ -217,13 +217,32 @@
   async function listAudios(videoId) {
     const { data, error } = await sb.from('video_audios').select('id,name,audio_key').eq('video_id', videoId).order('created_at', { ascending: true });
     if (error) throw error;
-    return data.map(r => ({ id: r.id, name: r.name, url: mediaUrl(r.audio_key) }));
+    return data.map(r => ({ id: r.id, name: r.name, key: r.audio_key, url: mediaUrl(r.audio_key) }));
   }
 
   async function createAudios(rows) {
     if (!rows.length) return;
     const { error } = await sb.from('video_audios').insert(rows);
     if (error) throw error;
+  }
+
+
+  // ---- Editing (admin only; the database rules check admin again) ----
+  async function updateRow(table, id, fields) {
+    const { data, error } = await sb.from(table).update(fields).eq('id', id).select('id');
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('Update was not allowed. Did you run edit-setup.sql in Supabase?');
+  }
+  const updateVideo = (id, fields) => updateRow('videos', id, fields);
+  const updatePlaylist = (id, fields) => updateRow('playlists', id, fields);
+  const updateAudio = (id, fields) => updateRow('video_audios', id, fields);
+
+  // Moves many videos into a playlist (or out of any playlist when playlistId is null).
+  async function setVideosPlaylist(ids, playlistId) {
+    if (!ids.length) return;
+    const { data, error } = await sb.from('videos').update({ playlist_id: playlistId || null }).in('id', ids).select('id');
+    if (error) throw error;
+    if (!data || data.length !== ids.length) throw new Error('Some videos could not be updated.');
   }
 
   async function createPlaylist(row) {
@@ -330,6 +349,7 @@
 
   window.NowEnjoyData = {
     listVideos, listPlaylists, createVideo, createPlaylist, listAudios, createAudios,
-    addView, myReaction, react, uploadFile, discardFile, cleanup, remove
+    addView, myReaction, react, uploadFile, discardFile, cleanup, remove,
+    updateVideo, updatePlaylist, updateAudio, setVideosPlaylist
   };
 })();
