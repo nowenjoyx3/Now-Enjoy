@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Edit Playlist | NOW ENJOY</title>
+
+    <link rel="icon" href="/logo/Logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="/logo/Logo.png">
+
+    <meta name="description" content="NOW ENJOY - log in or create an account to watch videos and playlists. For adults 18+ only.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050307">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/edit-playlist.js"></script>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Orbitron:wght@600;800;900&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="css/edit-playlist.css">
+    <link rel="stylesheet" href="css/common.css">
+</head>
+
+<body class="bg-obsidian min-h-screen flex flex-col relative selection:bg-crimson-600 selection:text-white">
+    <canvas id="particles-canvas" aria-hidden="true"></canvas>
+
+    <div class="fixed inset-0 bg-radial from-transparent via-obsidian/80 to-obsidian pointer-events-none z-0"></div>
+
+    <div class="relative z-10 flex-1 flex flex-col w-full min-h-screen">
+
+        <header class="bg-darkcard/90 border-b border-crimson-900/60 sticky top-0 z-40 backdrop-blur-md px-4 py-3">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+                <a href="home.html" class="flex items-center gap-2" aria-label="NOW ENJOY Home">
+                    <i class="fa-solid fa-crown text-crimson-500 text-2xl animate-pulse"></i>
+                    <span class="font-cinzel text-xl sm:text-2xl font-black text-white tracking-wider">
+                        NOW <span class="shimmer-text">ENJOY</span>
+                    </span>
+                </a>
+
+                <nav class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 text-[10px] sm:text-xs font-gothic">
+                    <a class="nav-btn" href="upload-video.html">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Upload</span>
+                    </a>
+
+                    <a class="nav-btn" href="profile.html">
+                        <i class="fa-solid fa-user-ninja"></i>
+                        <span>Profile</span>
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="flex-1 w-full max-w-3xl mx-auto p-4 sm:p-8">
+
+            <!-- 1) Pick a playlist -->
+            <section id="viewList" class="gothic-frame aura-glow p-6 sm:p-8">
+                <h1 class="font-cinzel text-2xl font-black text-white mb-2">EDIT PLAYLIST</h1>
+                <p class="text-xs text-gray-400 mb-4">Choose a playlist to change its title, cover image or the videos inside it.</p>
+
+                <input
+                    type="search"
+                    id="listSearch"
+                    placeholder="Search by title..."
+                    class="gothic-input w-full px-3 py-2 rounded-xl mb-4 text-sm"
+                >
+
+                <div id="editPlaylistsList" class="space-y-3"></div>
+
+                <p id="emptyList" class="hidden py-8 text-center text-gray-500 text-sm">Nothing to edit yet.</p>
+            </section>
+
+            <!-- 2) Edit the chosen playlist -->
+            <section id="viewEdit" class="gothic-frame aura-glow p-6 sm:p-8 hidden">
+                <a href="edit-playlist.html" class="text-[11px] text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Back to list
+                </a>
+
+                <h1 class="font-cinzel text-2xl font-black text-white mt-3 mb-1">EDIT PLAYLIST</h1>
+                <p class="text-xs text-gray-400 mb-6">Only change what you need. Nothing is saved until you press Save.</p>
+
+                <form id="formEditPlaylist" class="space-y-4">
+
+                    <label class="field-label">
+                        PLAYLIST TITLE *
+                        <input type="text" id="editTitle" maxlength="200" class="gothic-input w-full px-3 py-3 rounded-xl mt-1" required>
+                    </label>
+
+                    <div class="edit-box">
+                        <h3>COVER IMAGE</h3>
+                        <div class="preview" id="editCoverCurrent"><img alt="Current cover"></div>
+                        <label class="field-label mt-3">
+                            CHOOSE A NEW COVER (OPTIONAL)
+                            <input type="file" id="editCoverInput" accept="image/*" class="gothic-input w-full p-2 rounded-xl mt-1">
+                        </label>
+                        <div id="editCoverPreview" class="preview hidden"><img alt="New cover preview"></div>
+                    </div>
+
+                    <div class="edit-box">
+                        <h3>VIDEOS IN THIS PLAYLIST</h3>
+                        <div id="memberList" class="space-y-2 scroll-list"></div>
+                        <p id="noMemberNote" class="text-[11px] text-gray-500 hidden">No videos in this playlist yet.</p>
+                        <p class="text-[11px] text-gray-500 mt-2">
+                            "Remove" only takes the video out of this playlist. The video itself is not deleted.
+                        </p>
+                    </div>
+
+                    <div class="edit-box">
+                        <h3>ADD VIDEOS TO THIS PLAYLIST</h3>
+                        <input
+                            type="search"
+                            id="addSearch"
+                            placeholder="Search videos..."
+                            class="gothic-input w-full px-3 py-2 rounded-xl mb-3 text-sm"
+                        >
+                        <div id="addList" class="space-y-2 scroll-list"></div>
+                        <p id="noAddNote" class="text-[11px] text-gray-500 hidden">No other videos to add.</p>
+                        <p class="text-[11px] text-gray-500 mt-2">
+                            A video can be in only one playlist, so a video that is in another playlist will be moved here.
+                        </p>
+                    </div>
+
+                    <button type="submit" id="btnSave" class="btn-crimson w-full py-3 rounded-xl">SAVE CHANGES</button>
+
+                    <p id="editStatus" class="status-line"></p>
+                </form>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="relative z-10 py-3 text-center text-[11px] text-gray-500 border-t border-crimson-900/30 bg-obsidian/90">
+        &copy; NOW ENJOY : "This website is strictly for adults (18+) only"
+    </footer>
+</body>
+</html>
