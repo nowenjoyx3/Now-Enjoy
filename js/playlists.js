@@ -21,7 +21,7 @@
   // Login is handled by Supabase Auth (see js/supabase-client.js).
 
   function cardPlaylist(p, count, cats = []) {
-    return `<article class="gothic-frame media-card" tabindex="0" role="link" data-open-playlist="${esc(p.id)}" data-categories="${esc(cats.join(','))}"><img src="${p.cover}" alt="${esc(p.title)} cover"><h3>${esc(p.title)}</h3><p>${count} Videos</p></article>`;
+    return `<article class="gothic-frame media-card" tabindex="0" role="link" data-open-playlist="${esc(p.slug)}" data-categories="${esc(cats.join(','))}"><img src="${p.cover}" alt="${esc(p.title)} cover"><h3>${esc(p.title)}</h3><p>${count} Videos</p></article>`;
   }
 
   function setupCardClicks() {
