@@ -195,22 +195,22 @@
   });
 
   /* slug helpers: the video title becomes the link (letters of every language are kept) */
-  function slugify(title) {
+  function slugify(title, fallback) {
     const s = String(title || '').normalize('NFKC').toLowerCase()
       .replace(/[^\p{L}\p{N}\p{M}]+/gu, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 80)
       .replace(/-+$/g, '');
-    return s || 'video';
+    return s || fallback || 'video';
   }
 
   // Oldest video keeps the plain title; a later video with the same title gets -2, -3 ...
-  function assignSlugs(videos) {
+  function assignSlugs(videos, fallback) {
     const used = new Set();
     videos.slice()
-      .sort((a, b) => ((Date.parse(a.uploadedAt) || 0) - (Date.parse(b.uploadedAt) || 0)) || String(a.id).localeCompare(String(b.id)))
+      .sort((a, b) => ((Date.parse(a.uploadedAt || a.createdAt) || 0) - (Date.parse(b.uploadedAt || b.createdAt) || 0)) || String(a.id).localeCompare(String(b.id)))
       .forEach(v => {
-        const base = slugify(v.title);
+        const base = slugify(v.title, fallback);
         let slug = base, n = 2;
         while (used.has(slug)) slug = base + '-' + (n++);
         used.add(slug);
@@ -231,7 +231,7 @@
     const t = null; // guests may read too
     const { data, error } = await sb.from('playlists').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return data.map(r => mapPlaylist(r, t));
+    return assignSlugs(data.map(r => mapPlaylist(r, t)), 'playlist');
   }
 
   async function createVideo(row) {
