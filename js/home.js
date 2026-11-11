@@ -15,7 +15,7 @@
   let currentTerm = '';
 
   function cardVideo(v) {
-    return `<article class="gothic-frame media-card" tabindex="0" role="link" data-play-video="${esc(v.id)}"><img src="${esc(v.thumbnail)}" alt="${esc(v.title)} thumbnail"><h3>${esc(v.title)}</h3><p>${Number(v.views) || 0} Views</p></article>`;
+    return `<article class="gothic-frame media-card" tabindex="0" role="link" data-play-video="${esc(v.slug)}"><img src="${esc(v.thumbnail)}" alt="${esc(v.title)} thumbnail"><h3>${esc(v.title)}</h3><p>${Number(v.views) || 0} Views</p></article>`;
   }
 
   function setupCardClicks() {
