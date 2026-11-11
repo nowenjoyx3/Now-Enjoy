@@ -23,7 +23,7 @@
   const setText = (id, value) => { if ($(id)) $(id).textContent = value; };
 
   function cardVideo(v) {
-    return `<article class="gothic-frame media-card" tabindex="0" role="link" data-play-video="${esc(v.id)}"><img src="${v.thumbnail}" alt="${esc(v.title)} thumbnail"><h3>${esc(v.title)}</h3><p>${Number(v.views) || 0} Views</p></article>`;
+    return `<article class="gothic-frame media-card" tabindex="0" role="link" data-play-video="${esc(v.slug)}"><img src="${v.thumbnail}" alt="${esc(v.title)} thumbnail"><h3>${esc(v.title)}</h3><p>${Number(v.views) || 0} Views</p></article>`;
   }
 
   function setupCardClicks() {
@@ -208,7 +208,7 @@
     $('playlistName').textContent = title;
     $('playlistItems').innerHTML = list.map(v => {
       const now = v.id === currentVideo.id;
-      return `<a class="playlist-item${now ? ' current' : ''}" href="video.html?id=${encodeURIComponent(v.id)}"${now ? ' aria-current="true"' : ''}><img src="${esc(v.thumbnail)}" alt=""><span class="pi-title">${esc(v.title)}</span>${now ? '<span class="pi-now">NOW PLAYING</span>' : ''}</a>`;
+      return `<a class="playlist-item${now ? ' current' : ''}" href="video.html?id=${encodeURIComponent(v.slug)}"${now ? ' aria-current="true"' : ''}><img src="${esc(v.thumbnail)}" alt=""><span class="pi-title">${esc(v.title)}</span>${now ? '<span class="pi-now">NOW PLAYING</span>' : ''}</a>`;
     }).join('');
     $('playlistPanel').classList.remove('hidden');
 
@@ -253,10 +253,20 @@
   }
 
   async function initVideoPage() {
-    const id = new URLSearchParams(location.search).get('id');
+    const param = new URLSearchParams(location.search).get('id') || '';
     const vids = await Data.listVideos();
-    currentVideo = vids.find(v => v.id === id);
+    // the link carries the title; old links with the long id still work
+    currentVideo = vids.find(v => v.slug === param.toLowerCase()) || vids.find(v => v.id === param);
     if (!currentVideo) { setText('playerVideoTitle', 'Video not found'); return; }
+    const id = currentVideo.id;
+    if (param !== currentVideo.slug) {
+      // old id link: show the title link in the address bar (other parts like autoplay are kept)
+      try {
+        const qs = new URLSearchParams(location.search);
+        qs.set('id', currentVideo.slug);
+        history.replaceState(null, '', location.pathname + '?' + qs.toString() + location.hash);
+      } catch (_) {}
+    }
 
     setText('playerVideoTitle', currentVideo.title);
     try {
@@ -276,7 +286,7 @@
 
     // When this video ends, the next one in the playlist starts by itself.
     videoEl.addEventListener('ended', () => {
-      if (nextVideo) location.href = 'video.html?id=' + encodeURIComponent(nextVideo.id) + '&autoplay=1';
+      if (nextVideo) location.href = 'video.html?id=' + encodeURIComponent(nextVideo.slug) + '&autoplay=1';
     });
     if (new URLSearchParams(location.search).get('autoplay') === '1') {
       // wait a moment for the remembered language, then play (the browser may ask for a tap)
