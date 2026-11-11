@@ -13,6 +13,8 @@
   const selectedCats = new Set();
   let allVideos = null;   // loaded once, then search/filter work in memory
   let currentTerm = '';
+  // search ignores spaces, symbols and upper/lower case (letters and numbers of every language are kept)
+  const norm = s => String(s || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}\p{M}]+/gu, '');
 
   function cardVideo(v) {
     return `<article class="gothic-frame media-card" tabindex="0" role="link" data-play-video="${esc(v.slug)}"><img src="${esc(v.thumbnail)}" alt="${esc(v.title)} thumbnail"><h3>${esc(v.title)}</h3><p>${Number(v.views) || 0} Views</p></article>`;
@@ -33,7 +35,7 @@
 
   function renderVideos() {
     const list = (allVideos || []).filter(v =>
-      (v.title || '').toLowerCase().includes(currentTerm) &&
+      norm(v.title).includes(currentTerm) &&
       (selectedCats.size === 0 || selectedCats.has(v.category))
     );
     $('videoCardsContainer').innerHTML = list.map(cardVideo).join('');
@@ -81,7 +83,7 @@
     allVideos = await Data.listVideos();
     renderVideos();
     $('searchInput').oninput = e => {
-      currentTerm = e.target.value.toLowerCase().trim();
+      currentTerm = norm(e.target.value);
       renderVideos();
     };
     setupCategoryFilter(renderVideos);
