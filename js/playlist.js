@@ -42,13 +42,23 @@
 
   async function renderPlaylistDetail() {
     const header = $('playlistDetailHeader');
-    const id = new URLSearchParams(location.search).get('id');
+    const param = new URLSearchParams(location.search).get('id') || '';
     const [pls, vids] = await Promise.all([dbGetAll('playlists'), dbGetAll('videos')]);
-    const p = pls.find(x => x.id === id);
+    const p = pls.find(x => x.slug === param.toLowerCase()) || pls.find(x => x.id === param);
 
     if (!p) {
       header.innerHTML = '<p class="text-gray-400 text-sm">Playlist not found.</p>';
       return;
+    }
+
+    const id = p.id;
+    if (param !== p.slug) {
+      // old id link: show the title link in the address bar
+      try {
+        const qs = new URLSearchParams(location.search);
+        qs.set('id', p.slug);
+        history.replaceState(null, '', location.pathname + '?' + qs.toString() + location.hash);
+      } catch (_) {}
     }
 
     const list = vids.filter(v => v.playlistId === id);
