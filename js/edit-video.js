@@ -196,7 +196,7 @@
       playlists.map(p => `<option value="${esc(p.id)}">${esc(p.title)}</option>`).join('');
     $('editPlaylist').value = video.playlistId || '';
     $('editThumbCurrent').querySelector('img').src = video.thumbnail;
-    $('watchLink').href = 'video.html?id=' + encodeURIComponent(video.id);
+    $('watchLink').href = 'video.html?id=' + encodeURIComponent(video.slug);
 
     previewImage('editThumbInput', 'editThumbPreview');
     audios.forEach(addExistingRow);
