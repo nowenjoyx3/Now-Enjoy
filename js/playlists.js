@@ -60,7 +60,8 @@
     const container = $('playlistCardsContainer');
     const emptyMessage = $('emptyPlaylists');
     const noResultsMessage = $('noPlaylistSearchResults');
-    const normalize = value => (value || '').toLocaleLowerCase().trim();
+    // ignores spaces, symbols and upper/lower case (letters and numbers of every language are kept)
+    const normalize = value => String(value || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}\p{M}]+/gu, '');
 
     function filterPlaylists() {
       const query = normalize(input.value);
