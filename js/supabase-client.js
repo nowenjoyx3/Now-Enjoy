@@ -194,11 +194,37 @@
     createdBy: r.created_by, createdAt: r.created_at
   });
 
+  /* slug helpers: the video title becomes the link (letters of every language are kept) */
+  function slugify(title) {
+    const s = String(title || '').normalize('NFKC').toLowerCase()
+      .replace(/[^\p{L}\p{N}\p{M}]+/gu, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80)
+      .replace(/-+$/g, '');
+    return s || 'video';
+  }
+
+  // Oldest video keeps the plain title; a later video with the same title gets -2, -3 ...
+  function assignSlugs(videos) {
+    const used = new Set();
+    videos.slice()
+      .sort((a, b) => ((Date.parse(a.uploadedAt) || 0) - (Date.parse(b.uploadedAt) || 0)) || String(a.id).localeCompare(String(b.id)))
+      .forEach(v => {
+        const base = slugify(v.title);
+        let slug = base, n = 2;
+        while (used.has(slug)) slug = base + '-' + (n++);
+        used.add(slug);
+        v.slug = slug;
+      });
+    return videos;
+  }
+  /* end slug helpers */
+
   async function listVideos() {
     const t = null; // guests may read too
     const { data, error } = await sb.from('videos').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return data.map(r => mapVideo(r, t));
+    return assignSlugs(data.map(r => mapVideo(r, t)));
   }
 
   async function listPlaylists() {
