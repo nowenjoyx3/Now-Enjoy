@@ -126,6 +126,7 @@
     startParticles();
 
     $('btnLogout').onclick = async () => {
+      if (window.NowEnjoySettings) window.NowEnjoySettings.reset(); // day/night + language never outlive the login
       await auth.signOut();
       location.href = 'index.html';
     };
