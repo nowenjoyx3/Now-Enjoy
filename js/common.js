@@ -23,6 +23,100 @@ tailwind.config = {
   }
 };
 
+/* ---- Display settings: Day / Night and Language ----
+   Kept only in this browser tab (sessionStorage). Nothing is sent to the database.
+   Everything goes back to Night + English when the page is refreshed, after logout, or in a new tab. */
+(() => {
+  'use strict';
+
+  const KEY = 'ne_display_settings';
+  const THEMES = ['night', 'day'];
+  const LANGS = ['en', 'hi', 'as'];
+  const fresh = () => ({ theme: 'night', lang: 'en' });
+  const myUrl = document.currentScript && document.currentScript.src;
+  const root = document.documentElement;
+
+  let memory = null; // only used if the browser blocks sessionStorage
+
+  const clear = () => {
+    memory = null;
+    try { sessionStorage.removeItem(KEY); } catch (_) {}
+  };
+
+  const read = () => {
+    let raw = memory;
+    try { raw = sessionStorage.getItem(KEY) || raw; } catch (_) {}
+    try {
+      const s = JSON.parse(raw || 'null');
+      if (s && THEMES.includes(s.theme) && LANGS.includes(s.lang)) return s;
+    } catch (_) {}
+    return fresh();
+  };
+
+  const save = () => {
+    memory = JSON.stringify(state);
+    try { sessionStorage.setItem(KEY, memory); } catch (_) {}
+  };
+
+  // A page refresh puts everything back to normal.
+  const wasReload = () => {
+    try {
+      const nav = performance.getEntriesByType('navigation')[0];
+      if (nav) return nav.type === 'reload';
+      return !!(performance.navigation && performance.navigation.type === 1);
+    } catch (_) { return false; }
+  };
+
+  if (wasReload()) clear();
+  let state = read();
+
+  const applyTheme = () => root.classList.toggle('ne-day', state.theme === 'day');
+  applyTheme(); // before the page is drawn, so there is no flash
+
+  // The translation file is only loaded when a language other than English is in use.
+  function loadI18n() {
+    if (window.NowEnjoyI18n || !myUrl || document.getElementById('ne-i18n-script')) return;
+    const src = myUrl.replace(/common\.js(\?.*)?$/, 'i18n.js');
+    if (document.readyState === 'loading') {
+      document.write('<script id="ne-i18n-script" src="' + src + '"><\/script>');
+    } else {
+      const s = document.createElement('script');
+      s.id = 'ne-i18n-script';
+      s.src = src;
+      document.head.appendChild(s);
+    }
+  }
+
+  root.lang = state.lang;
+  if (state.lang !== 'en') loadI18n();
+
+  window.NowEnjoySettings = {
+    get theme() { return state.theme; },
+    get lang() { return state.lang; },
+    setTheme(t) {
+      if (!THEMES.includes(t)) return;
+      state.theme = t;
+      save();
+      applyTheme();
+    },
+    setLang(l) {
+      if (!LANGS.includes(l)) return;
+      state.lang = l;
+      save();
+      root.lang = l;
+      if (window.NowEnjoyI18n) window.NowEnjoyI18n.apply(l);
+      else if (l !== 'en') loadI18n();
+    },
+    reset() {
+      state = fresh();
+      clear();
+      applyTheme();
+      root.lang = 'en';
+      if (window.NowEnjoyI18n) window.NowEnjoyI18n.apply('en');
+    }
+  };
+})();
+
 (() => {
   'use strict';
 
