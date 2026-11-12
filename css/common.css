@@ -97,3 +97,137 @@ body.age-locked { overflow: hidden; }
 }
 
 .card-close:hover { color: #fff; border-color: #ff0033; box-shadow: 0 0 12px #ff003380; }
+
+
+/* =====================================================================
+   DAY MODE  (js/common.js adds the class "ne-day" to <html> when Day is chosen in Settings)
+   Black backgrounds become white and white text becomes black.
+   Red text, red borders, the red glow and the red filled buttons stay as they are.
+   Night mode (the normal look) is not touched by anything below.
+   ===================================================================== */
+html.ne-day,
+html.ne-day body { background:#fff !important; color:#000 !important; }
+
+html.ne-day .bg-radial {
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0) 0%, rgba(255,255,255,.8) 55%, #fff 100%) !important;
+}
+
+html.ne-day [class*="bg-obsidian"],
+html.ne-day [class*="bg-darkcard"] { background-color:#fff !important; }
+
+/* Tailwind text colours */
+html.ne-day .text-white,
+html.ne-day [class~="hover:text-white"]:hover { color:#000 !important; }
+html.ne-day [class*="text-gray-"] { color:#4b5563 !important; }
+
+/* brand shimmer: red / black instead of red / white */
+html.ne-day .shimmer-text {
+  background-image: linear-gradient(90deg,#ff1a40 0%,#000 50%,#ff1a40 100%) !important;
+}
+
+/* cards, rows, boxes, menus, inputs: white */
+html.ne-day .gothic-frame,
+html.ne-day .gothic-input,
+html.ne-day .edit-row,
+html.ne-day .delete-row,
+html.ne-day .member-row,
+html.ne-day .audio-existing,
+html.ne-day .edit-box,
+html.ne-day .admin-option,
+html.ne-day .profile-data,
+html.ne-day .view-tab,
+html.ne-day .filter-menu,
+html.ne-day .playlist-panel,
+html.ne-day .playlist-item,
+html.ne-day .profile-edit-box,
+html.ne-day .profile-edit-input,
+html.ne-day .age-box,
+html.ne-day .dub-menu,
+html.ne-day .theme-btn,
+html.ne-day .lang-btn,
+html.ne-day .lang-menu,
+html.ne-day .card-close { background:#fff !important; }
+
+/* the video frame stays black behind the video */
+html.ne-day .gothic-frame.bg-black { background:#000 !important; }
+
+/* full-screen layers */
+html.ne-day #ageVerification { background:rgba(255,255,255,.96) !important; }
+html.ne-day #editProfileModal { background:rgba(255,255,255,.86) !important; }
+html.ne-day .modal { background:#ffffffed !important; }
+
+/* light red where a dark red tint was used (so black text stays readable) */
+html.ne-day .admin-option > i,
+html.ne-day .view-tab.active,
+html.ne-day .theme-btn.active,
+html.ne-day .playlist-item.current,
+html.ne-day .action-btn,
+html.ne-day .alert { background:#ffe3e8 !important; }
+html.ne-day .nav-btn:hover,
+html.ne-day .mini-btn:hover,
+html.ne-day .edit-row button.go:hover,
+html.ne-day .filter-option:hover,
+html.ne-day .playlist-toggle:hover,
+html.ne-day .dub-menu button:hover,
+html.ne-day .lang-option:hover,
+html.ne-day .age-no:hover { background:#ffe3e8 !important; }
+
+html.ne-day .edit-row img { background:#f3f4f6 !important; }
+html.ne-day .btn-secondary { background:#e5e7eb !important; color:#000 !important; }
+html.ne-day .btn-secondary:hover { background:#d1d5db !important; }
+
+/* grey text */
+html.ne-day .media-card p,
+html.ne-day .item-sub,
+html.ne-day .view-tab,
+html.ne-day .nav-btn,
+html.ne-day .pass-toggle,
+html.ne-day .admin-option small,
+html.ne-day .age-note,
+html.ne-day .card-close,
+html.ne-day .theme-btn { color:#4b5563 !important; }
+html.ne-day .age-message { color:#374151 !important; }
+html.ne-day .field-label { color:#1f2937 !important; }
+
+/* white text becomes black */
+html.ne-day .media-card h3,
+html.ne-day .item-name,
+html.ne-day .profile-data strong,
+html.ne-day .section-heading,
+html.ne-day .playlist-toggle,
+html.ne-day .playlist-name,
+html.ne-day .pi-title,
+html.ne-day .admin-option,
+html.ne-day .admin-option b,
+html.ne-day .filter-option,
+html.ne-day .dub-menu button,
+html.ne-day .age-title,
+html.ne-day .age-no,
+html.ne-day .gothic-input,
+html.ne-day .profile-edit-input,
+html.ne-day .action-btn,
+html.ne-day .lang-btn,
+html.ne-day .lang-option,
+html.ne-day .view-tab:hover,
+html.ne-day .view-tab.active,
+html.ne-day .theme-btn:hover,
+html.ne-day .theme-btn.active,
+html.ne-day .nav-btn:hover,
+html.ne-day .back-btn:hover,
+html.ne-day .mini-btn:hover,
+html.ne-day .edit-row button.go:hover,
+html.ne-day .filter-clear:hover,
+html.ne-day .card-close:hover { color:#000 !important; }
+
+html.ne-day .gothic-input::placeholder { color:#6b7280; }
+html.ne-day .alert { color:#7a0019 !important; }
+html.ne-day .status-line.ok { color:#15803d !important; }
+
+/* lines and scrollbar */
+html.ne-day .profile-data p { border-bottom-color:#e5e7eb !important; }
+html.ne-day .playlist-body { border-top-color:#e5e7eb !important; }
+html.ne-day .filter-clear { border-top-color:#e5e7eb !important; }
+html.ne-day ::-webkit-scrollbar-track { background:#fff !important; }
+
+/* red filled buttons keep their white text so they stay readable */
+html.ne-day .action-btn.reaction-active { background:#cc0028 !important; color:#fff !important; }
